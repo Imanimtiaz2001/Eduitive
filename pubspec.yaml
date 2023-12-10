@@ -1,0 +1,35 @@
+name: myfirst_project
+description: A new Flutter project
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.12.0 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  location: ^4.3.0
+  url_launcher: ^6.0.0
+  contacts_service: ^0.6.2
+  device_info: ^2.0.0
+  uuid: ^3.0.4
+  shared_preferences: ^2.0.6
+  http: ^0.13.3 
+  sms_autofill: ^2.2.0
+  flutter_map: ^0.14.0
+  latlong2: any
+  platform_device_id: any
+  flutter_map_marker_cluster: any
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logo.PNG
+    - assets/chatbot.PNG
