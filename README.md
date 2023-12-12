@@ -1,4 +1,4 @@
-# eduitive
+# myfirst_project
 
 A new Flutter project.
 
