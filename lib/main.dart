@@ -1084,7 +1084,7 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-//acount page
+
 class AccountCreatedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
