@@ -34,3 +34,6 @@ flutter:
   assets:
     - assets/logo.PNG
     - assets/chatbot.PNG
+    - assets/googlelogo.PNG
+    - assets/splash2.PNG
+    - assets/splash3.PNG

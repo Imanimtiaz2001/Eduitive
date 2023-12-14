@@ -145,7 +145,7 @@ class SplashScreen2 extends StatelessWidget {
               height: 200,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/logo.PNG'),
+                  image: AssetImage('assets/splash2.PNG'),
                 ),
               ),
             ),
@@ -227,7 +227,7 @@ class SplashScreen3 extends StatelessWidget {
                   height: 200,
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: AssetImage('assets/logo.PNG'),
+                      image: AssetImage('assets/splash3.PNG'),
                     ),
                   ),
                 ),
@@ -830,7 +830,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Handle login with Google
                 },
                 icon: Image.asset(
-                  'assets/chatbot.PNG', // Replace with your actual asset path
+                  'assets/googlelogo.PNG', // Replace with your actual asset path
                   width: 24,
                   height: 24,
                   color: Color(0xFF060302),

@@ -87,6 +87,9 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/createAccount': (context) => CreateAccountPage(),
         '/AccountCreated': (context) => AccountCreatedPage(),
+        '/termsAndConditions': (context) => TermsAndConditionsPage(),
+        '/privacyPolicy': (context) => PrivacyPolicyPage(),
+        '/home': (context) => HomePage(),
       },
     );
   }
@@ -214,7 +217,7 @@ class SplashScreen2 extends StatelessWidget {
                       height: 200,
                       decoration: BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage('assets/logo.PNG'),
+                          image: AssetImage('assets/splash2.PNG'),
                         ),
                       ),
                     ),
@@ -303,7 +306,7 @@ class SplashScreen3 extends StatelessWidget {
                       height: 200,
                       decoration: BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage('assets/logo.PNG'),
+                          image: AssetImage('assets/splash3.PNG'),
                         ),
                       ),
                     ),
@@ -570,10 +573,9 @@ class LoginPage extends StatelessWidget {
                   // Handle login with Google
                 },
                 icon: Image.asset(
-                  'assets/chatbot.PNG', // Replace with your actual asset path
+                  'assets/googlelogo.PNG', // Replace with your actual asset path
                   width: 24,
                   height: 24,
-                  color: Color(0xFF060302),
                 ),
                 label: Text(
                   'Login with Google',
@@ -1185,6 +1187,65 @@ class _AccountCreatedPageContent extends StatelessWidget {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TermsAndConditionsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Terms and Conditions'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Your terms and conditions content here
+            Text('Terms and Conditions Content'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PrivacyPolicyPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Privacy Policy'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Your privacy policy content here
+            Text('Privacy Policy Content'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Home Page'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Your home page content here
+            Text('Home Page Content'),
           ],
         ),
       ),
