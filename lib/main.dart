@@ -475,7 +475,7 @@ class LoginPage extends StatelessWidget {
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(35.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -494,7 +494,7 @@ class LoginPage extends StatelessWidget {
               ),
 
               // Email Field
-              SizedBox(height: 16),
+              SizedBox(height: 34),
               Consumer<StateProviderClass>(
                 builder: (context, stateProvider, child) {
                   bool _validateEmail = stateProvider.validateEmail;
@@ -512,7 +512,7 @@ class LoginPage extends StatelessWidget {
               ),
 
               // Password Field
-              SizedBox(height: 16),
+              SizedBox(height: 13),
               Consumer<StateProviderClass>(
                 builder: (context, stateProvider, child) {
                   bool _isObscure = stateProvider.isObscure;
@@ -527,7 +527,7 @@ class LoginPage extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 1),
                   child: Text(
                     'Forgot Password',
                     style: TextStyle(
@@ -570,7 +570,7 @@ class LoginPage extends StatelessWidget {
               SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () {
-                  // Handle login with Google
+                  _showGoogleLoginDialog(context);
                 },
                 icon: Image.asset(
                   'assets/googlelogo.PNG', // Replace with your actual asset path
@@ -616,7 +616,119 @@ class LoginPage extends StatelessWidget {
       ),
     );
   }
+// Function to show Google login dialog
+  void _showGoogleLoginDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(30),
+            height: 350,  // Increase the height
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Main heading
+                Text(
+                  'Choose an account',
+                  style: TextStyle(
+                    color: Color(0xFF060302),
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
+                // Subheading
+                SizedBox(height: 8),
+                Text(
+                  'To continue to Eduitive',
+                  style: TextStyle(
+                    color: Color(0xFF767372),
+                    fontSize: 12,
+                  ),
+                ),
+
+                // Profile pic and text
+                SizedBox(height: 30),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      // You can replace the placeholder with actual user profile picture
+                      backgroundImage: AssetImage('assets/Photo.PNG'),
+                    ),
+                    SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Account Name',
+                          style: TextStyle(color: Color(0xFF060302), fontSize: 15,),
+
+                        ),
+                        Text(
+                          'email@gmail.com',
+                          style: TextStyle(color: Color(0xFF767372), fontSize: 10,),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Horizontal line
+                SizedBox(height: 20),
+                Divider(
+                  color: Color(0xFF767372),
+                  height: 1,
+                ),
+
+                // Icon and text
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.account_circle,
+                      color: Color(0xFF060302),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Use another account',
+                      style: TextStyle(color: Color(0xFF060302)),
+                    ),
+                  ],
+                ),
+
+                // Horizontal line
+                SizedBox(height: 20),
+                Divider(
+                  color: Color(0xFF767372),
+                  height: 1,
+                ),
+
+                // Information text
+                SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16), // Adjust the horizontal padding as needed
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      'To continue, Google will share your name, email address, and profile picture with Eduitive.',
+                      style: TextStyle(color: Color(0xFF767372), fontSize: 12,),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
   Widget _buildInputField(
       IconData icon,
       String label,
@@ -745,7 +857,6 @@ class LoginPage extends StatelessWidget {
       ],
     );
   }
-}
 
 
 class CreateAccountStateProvider extends ChangeNotifier {
@@ -834,7 +945,7 @@ class CreateAccountPage extends StatelessWidget {
               return Column(
                 children: [
                   Icon(Icons.account_circle, size: 100, color: Colors.blue),
-                  SizedBox(height: 2),
+                  SizedBox(height: 7),
                   Text(
                     'Create an Account',
                     style: TextStyle(
@@ -1201,19 +1312,69 @@ class TermsAndConditionsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Terms and Conditions'),
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(30.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Your terms and conditions content here
-            Text('Terms and Conditions Content'),
+            // Heading "Condition & Attending"
+            Text(
+              'Condition & Attending',
+              style: TextStyle(
+                color: Color(0xFF202244),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'By accessing our app, you agree to use it solely for educational purposes. '
+                    'You are not permitted to alter, distribute, or claim it as your own. '
+                    'We reserve the right to revoke access to anyone not adhering to these conditions.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+
+            // Heading "Terms & Use"
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                'Terms & Use',
+                style: TextStyle(
+                  color: Color(0xFF202244),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'The app is for educational use only and may not be reproduced, shared, or used for commercial purposes. '
+                    'Unauthorized usage may result in legal action. '
+                    'We are committed to protecting our intellectual property and maintaining its educational integrity.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
-
 class PrivacyPolicyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1221,18 +1382,87 @@ class PrivacyPolicyPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Privacy Policy'),
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(30.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Your privacy policy content here
-            Text('Privacy Policy Content'),
+            // Justified text about privacy
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Your privacy is of utmost importance to us at "Eduitive". This policy outlines our commitment to safeguarding your personal information '
+                    'and ensuring a secure and transparent online learning experience.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+
+            // Heading "Condition & Attending"
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                'Condition & Attending',
+                style: TextStyle(
+                  color: Color(0xFF202244),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'By accessing our app, you agree to use it solely for educational purposes. '
+                    'You are not permitted to alter, distribute, or claim it as your own. '
+                    'We reserve the right to revoke access to anyone not adhering to these conditions.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+
+            // Heading "Terms & Use"
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                'Terms & Use',
+                style: TextStyle(
+                  color: Color(0xFF202244),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'The app is for educational use only and may not be reproduced, shared, or used for commercial purposes. '
+                    'Unauthorized usage may result in legal action. '
+                    'We are committed to protecting our intellectual property and maintaining its educational integrity.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
