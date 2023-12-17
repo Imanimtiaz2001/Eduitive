@@ -10,6 +10,8 @@ void main() {
         ChangeNotifierProvider(create: (context) => StateProviderClass()),
         ChangeNotifierProvider(create: (context) => CreateAccountStateProvider()),
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
+        ChangeNotifierProvider(create: (context) => ChangePasswordProvider()),
+        ChangeNotifierProvider(create: (context) => VerificationCodeProvider()),
       ],
       child: MyApp(),
     ),
@@ -91,6 +93,8 @@ class MyApp extends StatelessWidget {
         '/home': (context) => HomePage(),
         '/forgotPassword': (context) => ForgotPasswordPage(),
         '/verificationCode': (context) => VerificationCodePage(),
+        '/changePassword': (context) => ChangePasswordPage(),
+        '/passwordChanged': (context) => PasswordChangedPage(),
       },
     );
   }
@@ -966,7 +970,7 @@ class CreateAccountPage extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'A small explanation about creating an account.',
+                    'Tell details to create an account.',
                     style: TextStyle(color: Color(0xFF767372)),
                   ),
                   SizedBox(height: 16),
@@ -1711,39 +1715,99 @@ class ForgotPasswordProvider extends ChangeNotifier {
   }
 }
 
-class VerificationCodePage extends StatefulWidget {
+
+
+
+class PasswordChangedStateProvider extends ChangeNotifier {
+  // You can add any state or methods relevant to this page
+
+  void someMethod() {
+    // Some logic here
+  }
+}
+class PasswordChangedPage extends StatelessWidget {
   @override
-  _VerificationCodePageState createState() => _VerificationCodePageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => PasswordChangedStateProvider(),
+      child: _PasswordChangedPageContent(),
+    );
+  }
 }
 
-class _VerificationCodePageState extends State<VerificationCodePage> {
-  List<TextEditingController> _codeControllers = List.generate(4, (index) => TextEditingController());
-  List<bool> _validateCodes = List.generate(4, (index) => false);
-  String _errorMessage = '';
-  bool _isCodeSent = true; // Set to true initially to display the green message
-  int _resendTimer = 10;
-  Timer? _timer;
-
+class _PasswordChangedPageContent extends StatelessWidget {
   @override
-  void initState() {
-    super.initState();
-    startTimer();
+  Widget build(BuildContext context) {
+    var provider = Provider.of<PasswordChangedStateProvider>(context, listen: false);
+
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 164, color: Colors.green),
+            SizedBox(height: 2),
+            Text(
+              'Password Changed Successfully!',
+              style: TextStyle(color: Color(0xFF060302), fontSize: 28, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Congratulations, you have changed your password!',
+                style: TextStyle(color: Color(0xFF767372)),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // You can call any methods from the provider here
+                provider.someMethod();
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+              style: ElevatedButton.styleFrom(
+                primary: Color(0xFF3787FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                child: Text(
+                  'Done',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+
+class VerificationCodeProvider extends ChangeNotifier {
+  final List<TextEditingController> codeControllers = List.generate(4, (index) => TextEditingController());
+  final List<bool> validateCodes = List.generate(4, (index) => false);
+  String errorMessage = '';
+  bool isCodeSent = true;
+  int resendTimer = 10;
+  Timer? timer;
 
   void startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (_resendTimer > 0) {
-        setState(() {
-          _resendTimer--;
-        });
+    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (resendTimer > 0) {
+        resendTimer--;
       } else {
-        _timer?.cancel();
-        if (_isCodeSent) {
-          // Automatically switch to "Resend Code" when the timer reaches 0
-          setState(() {
-            _isCodeSent = false;
-            _resendTimer = 60;
-          });
+        timer.cancel();
+        if (isCodeSent) {
+          isCodeSent = false;
+          resendTimer = 60;
+          notifyListeners();
         }
       }
     });
@@ -1751,10 +1815,41 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    timer?.cancel();
     super.dispose();
   }
 
+  void handleContinueButton(BuildContext context) {
+    validateCodes.clear();
+    validateCodes.addAll(codeControllers.map((controller) => controller.text.isEmpty));
+    errorMessage = validateCodes.any((validate) => validate) ? 'Code is required.' : '';
+
+    notifyListeners();
+
+    if (!validateCodes.any((validate) => validate)) {
+      Navigator.pushReplacementNamed(context, '/changePassword');
+    }
+  }
+
+  void toggleCodeSent() {
+    isCodeSent = !isCodeSent;
+    resendTimer = 60;
+    notifyListeners();
+    startTimer();
+  }
+}
+
+class VerificationCodePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => VerificationCodeProvider(),
+      child: _VerificationCodePage(),
+    );
+  }
+}
+
+class _VerificationCodePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1764,17 +1859,217 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(30.0),
+          child: Consumer<VerificationCodeProvider>(
+            builder: (context, provider, _) => Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 3),
+                Icon(Icons.code, size: 100, color: Color(0xFF060302)),
+
+                SizedBox(height: 3),
+                Text(
+                  'Enter a Code',
+                  style: TextStyle(
+                    color: Color(0xFF060302),
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                SizedBox(height: 4),
+                Text(
+                  'We sent a verification code on email',
+                  style: TextStyle(
+                    color: Color(0xFF767372),
+                  ),
+                ),
+
+                SizedBox(height: 10),
+                InkWell(
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/forgotPassword');
+                  },
+                  child: Text(
+                    'Change Email',
+                    style: TextStyle(
+                      color: Color(0xFF3787FF),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (index) {
+                    return Container(
+                      width: 50,
+                      height: 50,
+                      margin: EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Color(0xFFD0D0D0)),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      alignment: Alignment.center,
+                      child: TextField(
+                        controller: provider.codeControllers[index],
+                        maxLength: 1,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 24),
+                        onChanged: (value) {
+                          provider.validateCodes[index] = value.isEmpty;
+                          provider.notifyListeners();
+                        },
+                      ),
+                    );
+                  }),
+                ),
+
+                if (provider.validateCodes.any((validate) => validate))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error,
+                          color: Color(0xFFF04438),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Code is required.',
+                          style: TextStyle(color: Color(0xFFF04438)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    provider.handleContinueButton(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Color(0xFF3787FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                    child: Text(
+                      'Continue',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 10),
+                InkWell(
+                  onTap: () {
+                    provider.toggleCodeSent();
+                  },
+                  child: provider.isCodeSent
+                      ? Column(
+                    children: [
+                      Text(
+                        'Code sent successfully',
+                        style: TextStyle(
+                          color: Colors.green,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        'New Verification code can be requested in ${provider.resendTimer} seconds',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF767372),
+                        ),
+                      ),
+                    ],
+                  )
+                      : Text(
+                    'Resend Code',
+                    style: TextStyle(
+                      color: Color(0xFF3787FF),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class ChangePasswordProvider extends ChangeNotifier {
+  TextEditingController newPasswordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
+  bool showNewPassword = false;
+  bool showConfirmPassword = false;
+  String newPasswordError = '';
+  String confirmPasswordError = '';
+
+  void toggleNewPasswordVisibility() {
+    showNewPassword = !showNewPassword;
+    notifyListeners();
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    showConfirmPassword = !showConfirmPassword;
+    notifyListeners();
+  }
+
+  void validatePasswords() {
+    newPasswordError = newPasswordController.text.length < 8 ? 'Enter a valid password.' : '';
+    confirmPasswordError =
+    confirmPasswordController.text != newPasswordController.text ? 'Both passwords should match.' : '';
+
+    notifyListeners();
+  }
+}
+
+class ChangePasswordPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => ChangePasswordProvider(),
+      child: _ChangePasswordPage(),
+    );
+  }
+}
+
+class _ChangePasswordPage extends StatefulWidget {
+  @override
+  _ChangePasswordPageState createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<_ChangePasswordPage> {
+  @override
+  Widget build(BuildContext context) {
+    var provider = Provider.of<ChangePasswordProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Change Password'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon in the center
               SizedBox(height: 3),
-              Icon(Icons.code, size: 100, color: Color(0xFF060302)),
+              Icon(Icons.security, size: 100, color: Color(0xFF3787FF)),
 
-              // Heading "Enter a Code"
               SizedBox(height: 3),
               Text(
-                'Enter a Code',
+                'Change Password',
                 style: TextStyle(
                   color: Color(0xFF060302),
                   fontSize: 30,
@@ -1782,86 +2077,73 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                 ),
               ),
 
-              // Description "We sent a verification code on email"
               SizedBox(height: 4),
               Text(
-                'We sent a verification code on email',
+                'Your password length consists of 8-characters atleast.',
                 style: TextStyle(
                   color: Color(0xFF767372),
                 ),
+                textAlign: TextAlign.center,
               ),
 
-              // Change Email
-              SizedBox(height: 10),
-              InkWell(
-                onTap: () {
-                  // Navigate to the forgot password screen
-                  Navigator.pushReplacementNamed(context, '/forgotPassword');
-                },
-                child: Text(
-                  'Change Email',
-                  style: TextStyle(
-                    color: Color(0xFF3787FF),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-
-              // Code Fields
               SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
-                  return Container(
-                    width: 50,
-                    height: 50,
-                    margin: EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Color(0xFFD0D0D0)),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    alignment: Alignment.center,
-                    child: TextField(
-                      controller: _codeControllers[index],
-                      maxLength: 1,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 24),
-                      onChanged: (value) {
-                        setState(() {
-                          _validateCodes[index] = value.isEmpty;
-                        });
-                      },
-                    ),
-                  );
-                }),
-              ),
-
-              // Error Message
-              if (_validateCodes.any((validate) => validate))
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error,
-                        color: Color(0xFFF04438),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Code is required.',
-                        style: TextStyle(color: Color(0xFFF04438)),
-                      ),
-                    ],
+              TextField(
+                controller: provider.newPasswordController,
+                obscureText: !provider.showNewPassword,
+                style: TextStyle(fontSize: 18),
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  labelStyle: TextStyle(color: Color(0xFF060302)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF060302)),
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  errorText: provider.newPasswordError.isNotEmpty ? provider.newPasswordError : null,
+                  errorStyle: TextStyle(color: Colors.red),
+                  suffixIcon: IconButton(
+                    icon: Icon(provider.showNewPassword ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => provider.toggleNewPasswordVisibility(),
                   ),
                 ),
+                onChanged: (value) => provider.validatePasswords(),
+              ),
 
-              // Continue Button
+              SizedBox(height: 16),
+              TextField(
+                controller: provider.confirmPasswordController,
+                obscureText: !provider.showConfirmPassword,
+                style: TextStyle(fontSize: 18),
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  labelStyle: TextStyle(color: Color(0xFF060302)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF060302)),
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  errorText: provider.confirmPasswordError.isNotEmpty ? provider.confirmPasswordError : null,
+                  errorStyle: TextStyle(color: Colors.red),
+                  suffixIcon: IconButton(
+                    icon: Icon(provider.showConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => provider.toggleConfirmPasswordVisibility(),
+                  ),
+                ),
+                onChanged: (value) => provider.validatePasswords(),
+              ),
+
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  _handleContinueButton(context);
+                  provider.validatePasswords();
+                  if (provider.newPasswordError.isEmpty && provider.confirmPasswordError.isEmpty) {
+
+                    Navigator.pushReplacementNamed(context, '/passwordChanged');
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   primary: Color(0xFF3787FF),
@@ -1872,47 +2154,8 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                   child: Text(
-                    'Continue',
+                    'Save Password',
                     style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-
-              // Resend Code
-              SizedBox(height: 10),
-              InkWell(
-                onTap: () {
-                  // Toggle between showing success message and timer or "Resend Code"
-                  setState(() {
-                    _isCodeSent = !_isCodeSent;
-                    _resendTimer = 60;
-                  });
-                  startTimer();
-                },
-                child: _isCodeSent
-                    ? Column(
-                  children: [
-                    Text(
-                      'Code sent successfully',
-                      style: TextStyle(
-                        color: Colors.green,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      'New Verification code can be requested in $_resendTimer seconds',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF767372),
-                      ),
-                    ),
-                  ],
-                )
-                    : Text(
-                  'Resend Code',
-                  style: TextStyle(
-                    color: Color(0xFF3787FF),
-                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),
@@ -1921,19 +2164,5 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
         ),
       ),
     );
-  }
-
-  // Function to handle the "Continue" button click
-  void _handleContinueButton(BuildContext context) {
-    setState(() {
-      _validateCodes = _codeControllers.map((controller) => controller.text.isEmpty).toList();
-      _errorMessage = _validateCodes.any((validate) => validate) ? 'Code is required.' : '';
-    });
-
-    if (!_validateCodes.any((validate) => validate)) {
-      // Perform the desired action on successful validation
-      // For example, navigate to the next screen:
-      Navigator.pushReplacementNamed(context, '/home');
-    }
   }
 }
