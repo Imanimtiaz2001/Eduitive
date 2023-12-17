@@ -17,6 +17,7 @@ void main() {
     ),
   );
 }
+
 class StateProviderClass extends ChangeNotifier {
   bool _isActive = false;
 
