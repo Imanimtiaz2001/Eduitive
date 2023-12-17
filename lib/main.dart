@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => StateProviderClass()),
         ChangeNotifierProvider(create: (context) => CreateAccountStateProvider()),
+        ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
       ],
       child: MyApp(),
     ),
   );
 }
-
-
 class StateProviderClass extends ChangeNotifier {
   bool _isActive = false;
 
@@ -55,7 +55,7 @@ class StateProviderClass extends ChangeNotifier {
     if (!_validateEmail && !_validatePassword) {
       // Login logic here
       // If successful, navigate to the next screen
-      // Navigator.pushReplacementNamed(context, '/home'); // Note: You need to provide a valid context here.
+      Navigator.pushReplacementNamed(context, '/home'); // Note: You need to provide a valid context here.
     }
 
     notifyListeners();
@@ -65,7 +65,6 @@ class StateProviderClass extends ChangeNotifier {
     return email.contains('@');
   }
 }
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -90,6 +89,8 @@ class MyApp extends StatelessWidget {
         '/termsAndConditions': (context) => TermsAndConditionsPage(),
         '/privacyPolicy': (context) => PrivacyPolicyPage(),
         '/home': (context) => HomePage(),
+        '/forgotPassword': (context) => ForgotPasswordPage(),
+        '/verificationCode': (context) => VerificationCodePage(),
       },
     );
   }
@@ -528,15 +529,21 @@ class LoginPage extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 1),
-                  child: Text(
-                    'Forgot Password',
-                    style: TextStyle(
-                      color: Color(0xFF3787FF),
-                      decoration: TextDecoration.underline,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/forgotPassword');
+                    },
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Color(0xFF3787FF),
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ),
               ),
+
 
               // Login Button
               SizedBox(height: 16),
@@ -869,6 +876,9 @@ class CreateAccountStateProvider extends ChangeNotifier {
   TextEditingController _passwordController = TextEditingController();
   TextEditingController _confirmPasswordController = TextEditingController();
 
+  String _errorMessageUsername = '';
+  String get errorMessageUsername => _errorMessageUsername;
+
   bool _validateUsername = false;
   bool _validateEmail = false;
   bool _validatePassword = false;
@@ -966,7 +976,7 @@ class CreateAccountPage extends StatelessWidget {
                     'Username',
                     stateProvider.usernameController,
                     stateProvider.validateUsername,
-                    'Username is a required field or already taken.',
+                    'Please enter a valid username.',
                   ),
 
                   _buildInputField(
@@ -1405,7 +1415,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 20),
               child: Text(
-                'Condition & Attending',
+                'Information Collection',
                 style: TextStyle(
                   color: Color(0xFF202244),
                   fontSize: 24,
@@ -1418,9 +1428,9 @@ class PrivacyPolicyPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'By accessing our app, you agree to use it solely for educational purposes. '
-                    'You are not permitted to alter, distribute, or claim it as your own. '
-                    'We reserve the right to revoke access to anyone not adhering to these conditions.',
+                'When you use our app, we may collect personal information, such as your name, email address, and educational preferences. '
+                    'This information helps us personalize your learning journey and enhance our services.  '
+                    'We also gather data on user engagement and app usage to improve your experience and offer relevant content. ',
                 style: TextStyle(
                   color: Color(0xFF545454),
                   fontSize: 14,
@@ -1433,7 +1443,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 20),
               child: Text(
-                'Terms & Use',
+                'Use of Information',
                 style: TextStyle(
                   color: Color(0xFF202244),
                   fontSize: 24,
@@ -1446,9 +1456,9 @@ class PrivacyPolicyPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'The app is for educational use only and may not be reproduced, shared, or used for commercial purposes. '
-                    'Unauthorized usage may result in legal action. '
-                    'We are committed to protecting our intellectual property and maintaining its educational integrity.',
+                'When you use our app, we may collect personal information, such as your name, email address, and educational preferences. '
+                    'This information helps us personalize your learning journey and enhance our services.  '
+                    'We also gather data on user engagement and app usage to improve your experience and offer relevant content. ',
                 style: TextStyle(
                   color: Color(0xFF545454),
                   fontSize: 14,
@@ -1480,5 +1490,450 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// State provider class for Forgot Password Page
+class StateProviderForgotPassword extends ChangeNotifier {
+  TextEditingController _emailController = TextEditingController();
+  bool _validateEmail = false;
+  String _errorMessage = ''; // Initialize with an empty string
+
+  TextEditingController get emailController => _emailController;
+  bool get validateEmail => _validateEmail;
+  String get errorMessage => _errorMessage;
+
+  void resetValidation() {
+    _validateEmail = false;
+    _errorMessage = '';
+    notifyListeners();
+  }
+
+  void validateFields(BuildContext context) {
+    _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
+    notifyListeners();
+  }
+
+  void setErrorMessage(String errorMessage) {
+    _errorMessage = errorMessage;
+    notifyListeners();
+  }
+
+  bool _isValidEmail(String email) {
+    return email.contains('@');
+  }
+}
+
+
+class ForgotPasswordPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Forgot Password'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: Consumer<ForgotPasswordProvider>(
+            builder: (context, stateProvider, child) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon in the center
+                  SizedBox(height: 3),
+                  Icon(Icons.lock_open, size: 100, color: Color(0xFF060302)),
+
+                  // Heading "Forgot Password"
+                  SizedBox(height: 3),
+                  Text(
+                    'Forgot Password',
+                    style: TextStyle(
+                      color: Color(0xFF060302),
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  // Description "Enter your email linked to your account."
+                  SizedBox(height: 4),
+                  Text(
+                    'Enter your email linked to your account.',
+                    style: TextStyle(
+                      color: Color(0xFF767372),
+                    ),
+                  ),
+
+                  // Email Field
+                  SizedBox(height: 30),
+                  _buildInputField(
+                    Icons.email,
+                    'Email ID (Required)',
+                    stateProvider.emailController,
+                    stateProvider.validateEmail,
+                    stateProvider.errorMessage,
+                    stateProvider,
+                  ),
+
+                  // Continue Button
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      _handleContinueButton(context, stateProvider);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      primary: Color(0xFF3787FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      child: Text(
+                        'Continue',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Function to handle the "Continue" button click
+  void _handleContinueButton(BuildContext context, ForgotPasswordProvider stateProvider) {
+    stateProvider.validateFields(context);
+
+    if (stateProvider.validateEmail) {
+      // Display error message for required or invalid email
+      stateProvider.setErrorMessage('Please enter a valid email.');
+    } else {
+      // If email is registered, navigate to the Verification Code Page
+      Navigator.pushReplacementNamed(context, '/verificationCode');
+    }
+  }
+
+  // Widget to build input field
+  Widget _buildInputField(
+      IconData icon,
+      String label,
+      TextEditingController controller,
+      bool validate,
+      String errorMessage,
+      ForgotPasswordProvider stateProvider,
+      ) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: validate ? Color(0xFFF04438) : Color(0xFF060302)),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          margin: EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: Color(0xFF060302)),
+              SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onChanged: (_) {
+                    stateProvider.resetValidation();
+                  },
+                  decoration: InputDecoration(
+                    hintText: label,
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(color: Color(0xFF060302)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (validate)
+          Padding(
+            padding: const EdgeInsets.only(left: 20, bottom: 20, right: 20),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error,
+                  color: Color(0xFFF04438),
+                ),
+                SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    errorMessage,
+                    style: TextStyle(color: Color(0xFFF04438)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// State provider class for Forgot Password Page
+class ForgotPasswordProvider extends ChangeNotifier {
+  TextEditingController _emailController = TextEditingController();
+  bool _validateEmail = false;
+  String _errorMessage = '';
+
+  TextEditingController get emailController => _emailController;
+  bool get validateEmail => _validateEmail;
+  String get errorMessage => _errorMessage;
+
+  void resetValidation() {
+    _validateEmail = false;
+    _errorMessage = '';
+    notifyListeners();
+  }
+
+  void validateFields(BuildContext context) {
+    _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
+    notifyListeners();
+  }
+
+  void setErrorMessage(String errorMessage) {
+    _errorMessage = errorMessage;
+    notifyListeners();
+  }
+
+  bool _isValidEmail(String email) {
+    return email.isNotEmpty && email == 'imanimtiaz2001@gmail.com';
+  }
+}
+
+class VerificationCodePage extends StatefulWidget {
+  @override
+  _VerificationCodePageState createState() => _VerificationCodePageState();
+}
+
+class _VerificationCodePageState extends State<VerificationCodePage> {
+  List<TextEditingController> _codeControllers = List.generate(4, (index) => TextEditingController());
+  List<bool> _validateCodes = List.generate(4, (index) => false);
+  String _errorMessage = '';
+  bool _isCodeSent = true; // Set to true initially to display the green message
+  int _resendTimer = 10;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    startTimer();
+  }
+
+  void startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (_resendTimer > 0) {
+        setState(() {
+          _resendTimer--;
+        });
+      } else {
+        _timer?.cancel();
+        if (_isCodeSent) {
+          // Automatically switch to "Resend Code" when the timer reaches 0
+          setState(() {
+            _isCodeSent = false;
+            _resendTimer = 60;
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Enter a Code'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon in the center
+              SizedBox(height: 3),
+              Icon(Icons.code, size: 100, color: Color(0xFF060302)),
+
+              // Heading "Enter a Code"
+              SizedBox(height: 3),
+              Text(
+                'Enter a Code',
+                style: TextStyle(
+                  color: Color(0xFF060302),
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              // Description "We sent a verification code on email"
+              SizedBox(height: 4),
+              Text(
+                'We sent a verification code on email',
+                style: TextStyle(
+                  color: Color(0xFF767372),
+                ),
+              ),
+
+              // Change Email
+              SizedBox(height: 10),
+              InkWell(
+                onTap: () {
+                  // Navigate to the forgot password screen
+                  Navigator.pushReplacementNamed(context, '/forgotPassword');
+                },
+                child: Text(
+                  'Change Email',
+                  style: TextStyle(
+                    color: Color(0xFF3787FF),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+
+              // Code Fields
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(4, (index) {
+                  return Container(
+                    width: 50,
+                    height: 50,
+                    margin: EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Color(0xFFD0D0D0)),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    alignment: Alignment.center,
+                    child: TextField(
+                      controller: _codeControllers[index],
+                      maxLength: 1,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 24),
+                      onChanged: (value) {
+                        setState(() {
+                          _validateCodes[index] = value.isEmpty;
+                        });
+                      },
+                    ),
+                  );
+                }),
+              ),
+
+              // Error Message
+              if (_validateCodes.any((validate) => validate))
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error,
+                        color: Color(0xFFF04438),
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Code is required.',
+                        style: TextStyle(color: Color(0xFFF04438)),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Continue Button
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  _handleContinueButton(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  primary: Color(0xFF3787FF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  child: Text(
+                    'Continue',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+
+              // Resend Code
+              SizedBox(height: 10),
+              InkWell(
+                onTap: () {
+                  // Toggle between showing success message and timer or "Resend Code"
+                  setState(() {
+                    _isCodeSent = !_isCodeSent;
+                    _resendTimer = 60;
+                  });
+                  startTimer();
+                },
+                child: _isCodeSent
+                    ? Column(
+                  children: [
+                    Text(
+                      'Code sent successfully',
+                      style: TextStyle(
+                        color: Colors.green,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'New Verification code can be requested in $_resendTimer seconds',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFF767372),
+                      ),
+                    ),
+                  ],
+                )
+                    : Text(
+                  'Resend Code',
+                  style: TextStyle(
+                    color: Color(0xFF3787FF),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Function to handle the "Continue" button click
+  void _handleContinueButton(BuildContext context) {
+    setState(() {
+      _validateCodes = _codeControllers.map((controller) => controller.text.isEmpty).toList();
+      _errorMessage = _validateCodes.any((validate) => validate) ? 'Code is required.' : '';
+    });
+
+    if (!_validateCodes.any((validate) => validate)) {
+      // Perform the desired action on successful validation
+      // For example, navigate to the next screen:
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 }
