@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_use_of_protected_member
+
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -557,7 +559,7 @@ class LoginPage extends StatelessWidget {
                   Provider.of<StateProviderClass>(context, listen: false).validateFields(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Color(0xFF3787FF),
+                  backgroundColor: Color(0xFF3787FF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -1076,7 +1078,7 @@ class CreateAccountPage extends StatelessWidget {
                       stateProvider.validateFields(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      primary: Color(0xFF3787FF),
+                      backgroundColor: Color(0xFF3787FF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -1300,7 +1302,7 @@ class _AccountCreatedPageContent extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/login');
               },
               style: ElevatedButton.styleFrom(
-                primary: Color(0xFF3787FF),
+                backgroundColor: Color(0xFF3787FF),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -1587,7 +1589,7 @@ class ForgotPasswordPage extends StatelessWidget {
                       _handleContinueButton(context, stateProvider);
                     },
                     style: ElevatedButton.styleFrom(
-                      primary: Color(0xFF3787FF),
+                      backgroundColor: Color(0xFF3787FF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -1770,7 +1772,7 @@ class _PasswordChangedPageContent extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/login');
               },
               style: ElevatedButton.styleFrom(
-                primary: Color(0xFF3787FF),
+                backgroundColor: Color(0xFF3787FF),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
@@ -1920,6 +1922,7 @@ class _VerificationCodePage extends StatelessWidget {
                         style: TextStyle(fontSize: 24),
                         onChanged: (value) {
                           provider.validateCodes[index] = value.isEmpty;
+                          // ignore: invalid_use_of_visible_for_testing_member
                           provider.notifyListeners();
                         },
                       ),
@@ -1952,7 +1955,7 @@ class _VerificationCodePage extends StatelessWidget {
                     provider.handleContinueButton(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Color(0xFF3787FF),
+                    backgroundColor: Color(0xFF3787FF),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -2147,7 +2150,7 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  primary: Color(0xFF3787FF),
+                  backgroundColor: Color(0xFF3787FF),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
