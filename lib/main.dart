@@ -10,6 +10,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => StateProviderClass()),
+        ChangeNotifierProvider(create: (context) => LoginStateProvider()),
         ChangeNotifierProvider(create: (context) => CreateAccountStateProvider()),
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
         ChangeNotifierProvider(create: (context) => ChangePasswordProvider()),
@@ -29,47 +30,8 @@ class StateProviderClass extends ChangeNotifier {
     _isActive = value;
     notifyListeners();
   }
-
-  bool _isObscure = true;
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
-  bool _validateEmail = false;
-  bool _validatePassword = false;
-
-  bool get isObscure => _isObscure;
-  TextEditingController get emailController => _emailController;
-  TextEditingController get passwordController => _passwordController;
-  bool get validateEmail => _validateEmail;
-  bool get validatePassword => _validatePassword;
-
-  void togglePasswordVisibility() {
-    _isObscure = !_isObscure;
-    notifyListeners();
-  }
-
-  void resetValidation() {
-    _validateEmail = false;
-    _validatePassword = false;
-    notifyListeners();
-  }
-
-  void validateFields(BuildContext context) {
-    _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
-    _validatePassword = _passwordController.text.isEmpty || _passwordController.text != '12345678';
-
-    if (!_validateEmail && !_validatePassword) {
-      // Login logic here
-      // If successful, navigate to the next screen
-      Navigator.pushReplacementNamed(context, '/home'); // Note: You need to provide a valid context here.
-    }
-
-    notifyListeners();
-  }
-
-  bool _isValidEmail(String email) {
-    return email.contains('@');
-  }
 }
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -473,7 +435,50 @@ class SplashScreen4 extends StatelessWidget {
   }
 }
 
+class LoginStateProvider extends ChangeNotifier {
 
+  bool _isObscure = true;
+  TextEditingController _emailController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
+  bool _validateEmail = false;
+  bool _validatePassword = false;
+
+  bool get isObscure => _isObscure;
+  TextEditingController get emailController => _emailController;
+  TextEditingController get passwordController => _passwordController;
+  bool get validateEmail => _validateEmail;
+  bool get validatePassword => _validatePassword;
+
+  void togglePasswordVisibility() {
+    _isObscure = !_isObscure;
+    notifyListeners();
+  }
+
+  void resetValidation() {
+    _validateEmail = false;
+    _validatePassword = false;
+    notifyListeners();
+  }
+
+
+  void validateFields(BuildContext context) {
+    _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
+    // Validate password only if it's not empty and has more than 8 characters
+    _validatePassword = _passwordController.text.length < 8;
+
+    if (!_validateEmail && !_validatePassword) {
+      // Login logic here
+      // If successful, navigate to the next screen
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+
+    notifyListeners();
+  }
+
+  bool _isValidEmail(String email) {
+    return email.contains('@');
+  }
+}
 class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -503,7 +508,7 @@ class LoginPage extends StatelessWidget {
 
               // Email Field
               SizedBox(height: 34),
-              Consumer<StateProviderClass>(
+              Consumer<LoginStateProvider>(
                 builder: (context, stateProvider, child) {
                   bool _validateEmail = stateProvider.validateEmail;
                   TextEditingController _emailController = stateProvider.emailController;
@@ -521,7 +526,7 @@ class LoginPage extends StatelessWidget {
 
               // Password Field
               SizedBox(height: 13),
-              Consumer<StateProviderClass>(
+              Consumer<LoginStateProvider>(
                 builder: (context, stateProvider, child) {
                   bool _isObscure = stateProvider.isObscure;
                   bool _validatePassword = stateProvider.validatePassword;
@@ -556,7 +561,7 @@ class LoginPage extends StatelessWidget {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  Provider.of<StateProviderClass>(context, listen: false).validateFields(context);
+                  Provider.of<LoginStateProvider>(context, listen: false).validateFields(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF3787FF),
@@ -749,7 +754,7 @@ class LoginPage extends StatelessWidget {
       TextEditingController controller,
       bool validate,
       String errorMessage,
-      StateProviderClass stateProvider,
+      LoginStateProvider stateProvider,
       ) {
     return Column(
       children: [
@@ -808,7 +813,7 @@ class LoginPage extends StatelessWidget {
       bool isObscure,
       TextEditingController controller,
       bool validate,
-      StateProviderClass stateProvider,
+      LoginStateProvider stateProvider,
       ) {
     return Column(
       children: [
