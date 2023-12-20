@@ -464,7 +464,7 @@ class LoginStateProvider extends ChangeNotifier {
   void validateFields(BuildContext context) {
     _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
     // Validate password only if it's not empty and has more than 8 characters
-    _validatePassword = _passwordController.text.length < 8;
+    _validatePassword = _passwordController.text.isNotEmpty;
 
     if (!_validateEmail && !_validatePassword) {
       // Login logic here
