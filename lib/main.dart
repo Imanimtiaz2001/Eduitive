@@ -16,6 +16,7 @@ void main() {
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
         ChangeNotifierProvider(create: (context) => ChangePasswordProvider()),
         ChangeNotifierProvider(create: (context) => VerificationCodeProvider()),
+        ChangeNotifierProvider(create: (context) => HomeStateProvider()),
       ],
       child: MyApp(),
     ),
@@ -1542,25 +1543,399 @@ class PrivacyPolicyPage extends StatelessWidget {
   }
 }
 
+// Define the HomeStateProvider class for state management
+class HomeStateProvider extends ChangeNotifier {
+  // Add any state variables or functions needed for the Home page
+}
+
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home Page'),
+      body: ChangeNotifierProvider(
+        create: (context) => HomeStateProvider(),
+        child: _buildHomePage(),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    );
+  }
+
+  Widget _buildHomePage() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildHeader(),
+          _buildWhatWeDo(),
+          _buildBanners(),
+          _buildSeparator(),
+          _buildTransparentBoxes(),
+          _buildFooter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      color: Color(0xFFF7F8F8),
+      padding: EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hi, Username',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF060302),
+                ),
+              ),
+              Text(
+                'Let\'s start learning',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF060302),
+                ),
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: () {
+              // Navigate to the edit profile page
+              // Add navigation logic here
+            },
+            child: CircleAvatar(
+              radius: 30,
+              backgroundImage: AssetImage('assets/profile_picture.jpg'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWhatWeDo() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      color: Color(0xFFE4F1F8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What we do',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF060302),
+            ),
+          ),
+          SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.5),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: () {
+                // Navigate to the intro video page
+                // Add navigation logic here
+              },
+              icon: Icon(
+                Icons.play_circle_filled,
+                size: 48,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildBanners() {
+    return Container(
+      height: 200, // Set the desired height for banners
+      child: PageView(
+        children: [
+          _buildBanner(
+            color: Color(0xFFBD1CAD),
+            title: 'What do you want to learn today?',
+            buttonText: 'Get Started',
+            image: 'assets/banner_image_1.jpg',
+            onTap: () {
+              // Navigate to the grade section page
+              // Add navigation logic here
+            },
+          ),
+          _buildBanner(
+            color: Color(0xFFCEECFE),
+            title: 'Want to share any useful video?',
+            buttonText: 'Share',
+            image: 'assets/banner_image_2.jpg',
+            onTap: () {
+              // Navigate to the video upload page
+              // Add navigation logic here
+            },
+          ),
+          _buildBanner(
+            color: Color(0xFF8FAC94),
+            title: 'Are you unable to figure out something?',
+            buttonText: 'Ask us',
+            image: 'assets/banner_image_3.jpg',
+            onTap: () {
+              // Navigate to the chat bot page
+              // Add navigation logic here
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBanner({
+    required Color color,
+    required String title,
+    required String buttonText,
+    required String image,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF060302),
+                  ),
+                ),
+                Spacer(),
+                ElevatedButton(
+                  onPressed: onTap,
+                  style: ElevatedButton.styleFrom(
+                    primary: Color(0xFF3787FF),
+                  ),
+                  child: Text(buttonText),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+              child: Image.asset(
+                image,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeparator() {
+    return Container(
+      height: 16,
+      color: Color(0xFFF7F8F8),
+    );
+  }
+
+
+  Widget _buildTransparentBoxes() {
+    return Row(
+      children: [
+        _buildTransparentBox(
+          image: 'assets/grade_image_1.jpg',
+          text: 'Grade 1',
+          onTap: () {
+            // Navigate to the grade section page
+            // Add navigation logic here
+          },
+        ),
+        SizedBox(width: 8), // Adjust the spacing between boxes
+        _buildTransparentBox(
+          image: 'assets/grade_image_2.jpg',
+          text: 'Grade 2',
+          onTap: () {
+            // Navigate to the grade section page
+            // Add navigation logic here
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransparentBox({
+    required String image,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Color(0xFF3787FF)),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                child: Image.asset(
+                  image,
+                  width: double.infinity,
+                  height: 100, // Set the desired height for the image
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF060302),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildFooter() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Your home page content here
-            Text('Home Page Content'),
+            _buildFooterItem(
+              icon: 'assets/chat_bot_icon.png', // Replace with the actual path to the Chat Bot icon
+              text: 'Chat Bot',
+              isActive: true, // Change to false for inactive
+              onTap: () {
+                // Navigate to the Chat Bot page
+                // Add navigation logic here
+              },
+            ),
+            _buildFooterItem(
+              icon: 'assets/video_upload_icon.png', // Replace with the actual path to the Video Upload icon
+              text: 'Video Upload',
+              isActive: false, // Change to true for active
+              onTap: () {
+                // Navigate to the Video Upload page
+                // Add navigation logic here
+              },
+            ),
+            _buildFooterItem(
+              icon: 'assets/home_icon.png', // Replace with the actual path to the Home icon
+              text: 'Home',
+              isActive: false, // Change to true for active
+              onTap: () {
+                // Navigate to the Home page
+                // Add navigation logic here
+              },
+            ),
+            _buildFooterItem(
+              icon: 'assets/favorites_icon.png', // Add the actual path to the Favorites icon from Flutter Icons
+              text: 'Favorites',
+              isActive: false, // Change to true for active
+              onTap: () {
+                // Navigate to the Favorites page
+                // Add navigation logic here
+              },
+            ),
+            _buildFooterItem(
+              icon: 'assets/settings_icon.png', // Replace with the actual path to the Settings icon
+              text: 'Settings',
+              isActive: false, // Change to true for active
+              onTap: () {
+                // Navigate to the Settings page
+                // Add navigation logic here
+              },
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildFooterItem({
+    required String icon,
+    required String text,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            icon,
+            width: 24, // Adjust the size as needed
+            height: 24,
+            color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+          ),
+          SizedBox(height: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+
+
 
 // State provider class for Forgot Password Page
 class StateProviderForgotPassword extends ChangeNotifier {
