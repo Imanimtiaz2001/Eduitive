@@ -1,5 +1,6 @@
 // ignore_for_file: invalid_use_of_protected_member
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -245,6 +246,7 @@ class SplashScreen2 extends StatelessWidget {
                 child: IconButton(
                   icon: Icon(Icons.skip_next, size: 50, color: Colors.blue),
                   onPressed: () {
+
                     Navigator.pushReplacementNamed(context, '/login');
                   },
                 ),
@@ -466,12 +468,6 @@ class LoginStateProvider extends ChangeNotifier {
     // Validate password only if it's not empty and has more than 8 characters
     _validatePassword = _passwordController.text.isNotEmpty;
 
-    if (!_validateEmail && !_validatePassword) {
-      // Login logic here
-      // If successful, navigate to the next screen
-      Navigator.pushReplacementNamed(context, '/home');
-    }
-
     notifyListeners();
   }
 
@@ -560,8 +556,9 @@ class LoginPage extends StatelessWidget {
               // Login Button
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () {
+                onPressed:  () async {
                   Provider.of<LoginStateProvider>(context, listen: false).validateFields(context);
+                  await _login(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF3787FF),
@@ -635,6 +632,32 @@ class LoginPage extends StatelessWidget {
       ),
     );
   }
+
+Future<void> _login(BuildContext context) async {
+    final loginState = Provider.of<LoginStateProvider>(context, listen: false);
+    final email = loginState.emailController.text;
+    final password = loginState.passwordController.text;
+    final apiUrl = 'http://localhost:3000/api/login';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      print(response);
+
+      if (response.statusCode == 200) {
+        print("Login SucessFull");
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        print('Login failed: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error during login: $error');
+    }
+  }
+
 // Function to show Google login dialog
   void _showGoogleLoginDialog(BuildContext context) {
     showDialog(
@@ -952,6 +975,39 @@ class CreateAccountStateProvider extends ChangeNotifier {
   }
 }
 
+Future<void> _signup(BuildContext context) async {
+    // Get email, password, and name from your state provider
+    final stateProvider = Provider.of<CreateAccountStateProvider>(context, listen: false);
+    final email = stateProvider.emailController.text;
+    final password = stateProvider.passwordController.text;
+    final name = stateProvider.usernameController.text;
+
+    // Your API endpoint
+    final apiUrl = 'http://localhost:3000/api/signup';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password, 'name': name}),
+      );
+
+      if (response.statusCode == 201) {
+        // Successful signup, handle the response accordingly
+        print('Account created successfully');
+      } else {
+        // Handle other status codes or errors
+        print('Account creation failed: ${response.statusCode}');
+      }
+    } catch (error) {
+      // Handle network or other errors
+      print('Error during account creation: $error');
+    }
+  }
+
+
+
+
 class CreateAccountPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1079,8 +1135,9 @@ class CreateAccountPage extends StatelessWidget {
                   SizedBox(height: 16),
 
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       stateProvider.validateFields(context);
+                      await _signup(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF3787FF),
