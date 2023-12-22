@@ -558,6 +558,7 @@ class LoginPage extends StatelessWidget {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed:  () async {
+                  Navigator.pushReplacementNamed(context, '/home');
                   Provider.of<LoginStateProvider>(context, listen: false).validateFields(context);
                   await _login(context);
                 },
@@ -639,7 +640,6 @@ Future<void> _login(BuildContext context) async {
     final email = loginState.emailController.text;
     final password = loginState.passwordController.text;
     final apiUrl = 'http://localhost:3000/api/login';
-
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -647,7 +647,6 @@ Future<void> _login(BuildContext context) async {
         body: jsonEncode({'email': email, 'password': password}),
       );
       print(response);
-
       if (response.statusCode == 200) {
         print("Login SucessFull");
         Navigator.pushReplacementNamed(context, '/home');
