@@ -24,10 +24,13 @@ dependencies:
   latlong2: any
   platform_device_id: any
   flutter_map_marker_cluster: any
+  chewie: ^1.7.4
+  video_player: ^2.2.17
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: "^0.13.1"
 
 flutter:
   uses-material-design: true
@@ -37,4 +40,27 @@ flutter:
     - assets/googlelogo.PNG
     - assets/splash2.PNG
     - assets/splash3.PNG
-    - assets/Photo.PNG
+    - assets/banner_image_1.PNG
+    - assets/banner_image_2.PNG
+    - assets/banner_image_3.jpg
+    - assets/grade_image_1.PNG
+    - assets/grade_image_2.PNG
+    - assets/grade_image_3.PNG
+    - assets/grade_image_4.PNG
+    - assets/chat_bot_icon.PNG
+    - assets/video_upload_icon.png
+    - assets/home_icon.png
+    - assets/favorities_icon.PNG
+    - assets/settings_icon.png
+    - assets/not_found.PNG
+    - assets/Eduitive.mp4
+    - assets/sub_image_1.PNG
+    - assets/sub_image_2.PNG
+    - assets/sub_image_3.PNG
+    - assets/sub_image_4.PNG
+    - assets/learn_image_1.PNG
+    - assets/learn_image_2.PNG
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.PNG"
