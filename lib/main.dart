@@ -439,14 +439,18 @@ class SplashScreen4 extends StatelessWidget {
 class LoginStateProvider extends ChangeNotifier {
 
   bool _isObscure = true;
+  
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
+  
   bool _validateEmail = false;
   bool _validatePassword = false;
 
   bool get isObscure => _isObscure;
+
   TextEditingController get emailController => _emailController;
   TextEditingController get passwordController => _passwordController;
+  
   bool get validateEmail => _validateEmail;
   bool get validatePassword => _validatePassword;
 
@@ -461,17 +465,18 @@ class LoginStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateObscure() {
+    _isObscure = !_isObscure;
+    notifyListeners();
+  }
 
   void validateFields(BuildContext context) {
-    _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
-    // Validate password only if it's not empty and has more than 8 characters
-    _validatePassword = _passwordController.text.isNotEmpty;
+    _validateEmail = !_isValidEmail(_emailController.text);
+    _validatePassword = _passwordController.text.length < 8;
     if (!_validateEmail && !_validatePassword) {
       // Login logic here
       // If successful, navigate to the next screen
-      Navigator.pushReplacementNamed(context, '/home');
     }
-
     notifyListeners();
   }
 
@@ -479,6 +484,48 @@ class LoginStateProvider extends ChangeNotifier {
     return email.contains('@');
   }
 }
+
+Future<void> loginUser(
+    BuildContext context, String email, String password) async {
+  try {
+    // Prepare the request body
+    Map<String, String> requestBody = {
+      'email': email,
+      'password': password,
+    };
+
+    // Make the API request
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/api/login'),
+      body: jsonEncode(requestBody),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      // Successful login
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      print(responseData);
+
+      // Use the response data as needed, for example, navigate to the home page
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // Failed login
+      print("Error: ${response.statusCode}");
+      print("Response: ${response.body}");
+      // Handle the error, for example, show an error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Invalid credentials. Please try again."),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  } catch (e) {
+    print("Error: $e");
+    // Handle other errors if necessary
+  }
+}
+
 class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -531,7 +578,6 @@ class LoginPage extends StatelessWidget {
                   bool _isObscure = stateProvider.isObscure;
                   bool _validatePassword = stateProvider.validatePassword;
                   TextEditingController _passwordController = stateProvider.passwordController;
-
                   return _buildPasswordField(_isObscure, _passwordController, _validatePassword, stateProvider);
                 },
               ),
@@ -560,9 +606,16 @@ class LoginPage extends StatelessWidget {
               // Login Button
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed:  () {
-                  Navigator.pushReplacementNamed(context, '/home');
+                onPressed:  () async {
                   Provider.of<LoginStateProvider>(context, listen: false).validateFields(context);
+                    String email = Provider.of<LoginStateProvider>(context, listen: false)
+                          .emailController.text;
+                    String password = Provider.of<LoginStateProvider>(context, listen: false)
+                          .passwordController.text;
+                    print(email);
+                    print(password);
+                  
+                  await loginUser(context, email, password);
               //  await _login(context);
                 },
                 style: ElevatedButton.styleFrom(
@@ -638,28 +691,6 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-Future<void> _login(BuildContext context) async {
-    final loginState = Provider.of<LoginStateProvider>(context, listen: false);
-    final email = loginState.emailController.text;
-    final password = loginState.passwordController.text;
-    final apiUrl = 'http://10.7.112.224:3000/api/login';
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      );
-      print(response);
-      if (response.statusCode == 200) {
-        print("Login SucessFull");
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        print('Login failed: ${response.statusCode}');
-      }
-    } catch (error) {
-      print('Error during login: $error');
-    }
-  }
 
 // Function to show Google login dialog
   void _showGoogleLoginDialog(BuildContext context) {
@@ -857,6 +888,7 @@ Future<void> _login(BuildContext context) async {
               SizedBox(width: 8),
               Expanded(
                 child: TextField(
+                  controller: controller,
                   obscureText: isObscure,
                   onChanged: (_) {
                     stateProvider.resetValidation();
@@ -986,7 +1018,7 @@ Future<void> _signup(BuildContext context) async {
     final name = stateProvider.usernameController.text;
 
     // Your API endpoint
-    final apiUrl = 'http://10.7.112.224:3000/api/signup';
+    final apiUrl = 'http://localhost:3000/api/signup';
 
     try {
       final response = await http.post(
@@ -998,6 +1030,12 @@ Future<void> _signup(BuildContext context) async {
       if (response.statusCode == 201) {
         // Successful signup, handle the response accordingly
         print('Account created successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Account Created Successfully !!"),
+          duration: Duration(seconds: 3),
+        ),
+      );
       } else {
         // Handle other status codes or errors
         print('Account creation failed: ${response.statusCode}');
@@ -1007,8 +1045,6 @@ Future<void> _signup(BuildContext context) async {
       print('Error during account creation: $error');
     }
   }
-
-
 
 
 class CreateAccountPage extends StatelessWidget {
@@ -1138,9 +1174,9 @@ class CreateAccountPage extends StatelessWidget {
                   SizedBox(height: 16),
 
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       stateProvider.validateFields(context);
-                 //   await _signup(context);
+                      await _signup(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF3787FF),
@@ -1676,17 +1712,53 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
+  Future<void> sendPasswordResetEmail(
+      BuildContext context, String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/reset-password'),
+        body: {'email': email},
+      );
+
+      if (response.statusCode == 200) {
+        // Password reset email sent successfully
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Password reset email sent successfully'),
+          duration: Duration(seconds: 2),
+        ));
+      } else {
+        // Error sending password reset email
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error sending password reset email'),
+          duration: Duration(seconds: 2),
+        ));
+      }
+    } catch (e) {
+      print(e.toString());
+      // Handle other exceptions
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error sending password reset email'),
+        duration: Duration(seconds: 2),
+      ));
+    }
+  }
 
   // Function to handle the "Continue" button click
-  void _handleContinueButton(BuildContext context, ForgotPasswordProvider stateProvider) {
+  void _handleContinueButton(BuildContext context, ForgotPasswordProvider stateProvider) async {
     stateProvider.validateFields(context);
-
-    if (stateProvider.validateEmail) {
+    if (!stateProvider.validateEmail) {
       // Display error message for required or invalid email
       stateProvider.setErrorMessage('Please enter a valid email.');
     } else {
-      // If email is registered, navigate to the Verification Code Page
-      Navigator.pushReplacementNamed(context, '/verificationCode');
+      try {
+        await sendPasswordResetEmail(
+            context, stateProvider.emailController.text);
+      } catch (e) {
+        print(e.toString());
+        // Handle other exceptions
+      }
+      // If email is registered, navigate to the login Page
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
