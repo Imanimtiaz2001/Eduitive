@@ -1,5 +1,5 @@
-name: myfirst_project
-description: A new Flutter project
+name: Eduitive
+description: Where Education meets Innovation
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -26,11 +26,18 @@ dependencies:
   flutter_map_marker_cluster: any
   chewie: ^1.7.4
   video_player: ^2.2.17
+  dio: ^4.0.0
+  image_picker: ^0.8.4
   
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: "^0.13.1"
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: assets/logo.PNG
 
 flutter:
   uses-material-design: true
@@ -43,6 +50,7 @@ flutter:
     - assets/banner_image_1.PNG
     - assets/banner_image_2.PNG
     - assets/banner_image_3.jpg
+    - assets/banner_image_3b.PNG
     - assets/grade_image_1.PNG
     - assets/grade_image_2.PNG
     - assets/grade_image_3.PNG
@@ -60,7 +68,3 @@ flutter:
     - assets/sub_image_4.PNG
     - assets/learn_image_1.PNG
     - assets/learn_image_2.PNG
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/logo.PNG"

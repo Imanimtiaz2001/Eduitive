@@ -1,11 +1,16 @@
 // ignore_for_file: invalid_use_of_protected_member
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:image_picker/image_picker.dart';
 void main() {
   runApp(
     MultiProvider(
@@ -16,7 +21,14 @@ void main() {
         ChangeNotifierProvider(create: (context) => ForgotPasswordProvider()),
         ChangeNotifierProvider(create: (context) => ChangePasswordProvider()),
         ChangeNotifierProvider(create: (context) => VerificationCodeProvider()),
-  ],
+        ChangeNotifierProvider(create: (context) => HomeStateProvider()),
+        ChangeNotifierProvider(create: (context) => SettingsProvider()),
+        ChangeNotifierProvider(create: (context) => ProfileeditedProvider()),
+        ChangeNotifierProvider(create: (context) => EditProfileProvider()),
+        ChangeNotifierProvider(create: (context) => VideoUploadProvider()),
+        ChangeNotifierProvider(create: (context) => VideoUploadedProvider()),
+        ChangeNotifierProvider(create: (context) => VideoSearchProvider()),
+      ],
       child: MyApp(),
     ),
   );
@@ -56,10 +68,27 @@ class MyApp extends StatelessWidget {
         '/AccountCreated': (context) => AccountCreatedPage(),
         '/termsAndConditions': (context) => TermsAndConditionsPage(),
         '/privacyPolicy': (context) => PrivacyPolicyPage(),
+        '/home': (context) => HomePage(),
         '/forgotPassword': (context) => ForgotPasswordPage(),
         '/verificationCode': (context) => VerificationCodePage(),
         '/changePassword': (context) => ChangePasswordPage(),
         '/passwordChanged': (context) => PasswordChangedPage(),
+        '/gradeSection': (context) => GradeSectionPage(),
+        '/subjectSection': (context) => SubjectSectionPage(),
+        '/learningSection': (context) => LearningSectionPage(),
+        '/settings': (context) => SettingsPage(),
+        '/videoUpload': (context) => VideoUploadPage(),
+        '/videoSearch': (context) => VideoSearchPage(),
+        '/videoUploaded': (context) => VideoUploadedPage(),
+        '/favorites': (context) => FavoritesPage(),
+        '/profileEdited': (context) => ProfileeditedPage(),
+        '/editProfile': (context) => EditProfilePage(),
+        '/uploaderProfile': (context) => UploaderPage(),
+        '/homeVideo': (context) => VideoWatchHomePage(),
+        '/videoWatch': (context) => VideoWatchPage(),
+        '/videoPolicy': (context) => VideoPolicy(),
+        '/aboutUs': (context) => AboutUs(),
+
       },
     );
   }
@@ -439,18 +468,14 @@ class SplashScreen4 extends StatelessWidget {
 class LoginStateProvider extends ChangeNotifier {
 
   bool _isObscure = true;
-  
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
-  
   bool _validateEmail = false;
   bool _validatePassword = false;
 
   bool get isObscure => _isObscure;
-
   TextEditingController get emailController => _emailController;
   TextEditingController get passwordController => _passwordController;
-  
   bool get validateEmail => _validateEmail;
   bool get validatePassword => _validatePassword;
 
@@ -465,18 +490,17 @@ class LoginStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateObscure() {
-    _isObscure = !_isObscure;
-    notifyListeners();
-  }
 
   void validateFields(BuildContext context) {
-    _validateEmail = !_isValidEmail(_emailController.text);
-    _validatePassword = _passwordController.text.length < 8;
+    _validateEmail = _emailController.text.isEmpty || !_isValidEmail(_emailController.text);
+    // Validate password only if it's not empty and has more than 8 characters
+    _validatePassword = _passwordController.text.isNotEmpty;
     if (!_validateEmail && !_validatePassword) {
       // Login logic here
       // If successful, navigate to the next screen
+      Navigator.pushReplacementNamed(context, '/home');
     }
+
     notifyListeners();
   }
 
@@ -484,55 +508,15 @@ class LoginStateProvider extends ChangeNotifier {
     return email.contains('@');
   }
 }
-
-Future<void> loginUser(
-    BuildContext context, String email, String password) async {
-  try {
-    // Prepare the request body
-    Map<String, String> requestBody = {
-      'email': email,
-      'password': password,
-    };
-
-    // Make the API request
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/api/login'),
-      body: jsonEncode(requestBody),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      // Successful login
-      Map<String, dynamic> responseData = jsonDecode(response.body);
-      print(responseData);
-
-      // Use the response data as needed, for example, navigate to the home page
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      // Failed login
-      print("Error: ${response.statusCode}");
-      print("Response: ${response.body}");
-      // Handle the error, for example, show an error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Invalid credentials. Please try again."),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  } catch (e) {
-    print("Error: $e");
-    // Handle other errors if necessary
-  }
-}
-
 class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
-      ),
+        title: Text('Login',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)),
+        centerTitle: true,),
+
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(35.0),
@@ -578,6 +562,7 @@ class LoginPage extends StatelessWidget {
                   bool _isObscure = stateProvider.isObscure;
                   bool _validatePassword = stateProvider.validatePassword;
                   TextEditingController _passwordController = stateProvider.passwordController;
+
                   return _buildPasswordField(_isObscure, _passwordController, _validatePassword, stateProvider);
                 },
               ),
@@ -606,17 +591,10 @@ class LoginPage extends StatelessWidget {
               // Login Button
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed:  () async {
+                onPressed:  () {
+                  Navigator.pushReplacementNamed(context, '/home');
                   Provider.of<LoginStateProvider>(context, listen: false).validateFields(context);
-                    String email = Provider.of<LoginStateProvider>(context, listen: false)
-                          .emailController.text;
-                    String password = Provider.of<LoginStateProvider>(context, listen: false)
-                          .passwordController.text;
-                    print(email);
-                    print(password);
-                  
-                  await loginUser(context, email, password);
-              //  await _login(context);
+                  //  await _login(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF3787FF),
@@ -690,8 +668,30 @@ class LoginPage extends StatelessWidget {
       ),
     );
   }
-
-
+  /**
+      Future<void> _login(BuildContext context) async {
+      final loginState = Provider.of<LoginStateProvider>(context, listen: false);
+      final email = loginState.emailController.text;
+      final password = loginState.passwordController.text;
+      final apiUrl = 'http://10.7.112.224:3000/api/login';
+      try {
+      final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+      );
+      print(response);
+      if (response.statusCode == 200) {
+      print("Login SucessFull");
+      Navigator.pushReplacementNamed(context, '/home');
+      } else {
+      print('Login failed: ${response.statusCode}');
+      }
+      } catch (error) {
+      print('Error during login: $error');
+      }
+      }
+   **/
 // Function to show Google login dialog
   void _showGoogleLoginDialog(BuildContext context) {
     showDialog(
@@ -805,135 +805,134 @@ class LoginPage extends StatelessWidget {
     );
   }
 }
-  Widget _buildInputField(
-      IconData icon,
-      String label,
-      TextEditingController controller,
-      bool validate,
-      String errorMessage,
-      LoginStateProvider stateProvider,
-      ) {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border.all(color: validate ? Color(0xFFF04438) : Color(0xFF060302)),
-            borderRadius: BorderRadius.circular(28),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          margin: EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              Icon(icon, color: Color(0xFF060302)),
-              SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  onChanged: (_) {
-                    stateProvider.resetValidation();
-                  },
-                  decoration: InputDecoration(
-                    hintText: label,
-                    border: InputBorder.none,
-                  ),
-                  style: TextStyle(color: Color(0xFF060302)),
-                ),
-              ),
-            ],
-          ),
+Widget _buildInputField(
+    IconData icon,
+    String label,
+    TextEditingController controller,
+    bool validate,
+    String errorMessage,
+    LoginStateProvider stateProvider,
+    ) {
+  return Column(
+    children: [
+      Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          border: Border.all(color: validate ? Color(0xFFF04438) : Color(0xFF060302)),
+          borderRadius: BorderRadius.circular(28),
         ),
-        if (validate)
-          Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 20, right: 20),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error,
-                  color: Color(0xFFF04438),
-                ),
-                SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    errorMessage,
-                    style: TextStyle(color: Color(0xFFF04438)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField(
-      bool isObscure,
-      TextEditingController controller,
-      bool validate,
-      LoginStateProvider stateProvider,
-      ) {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border.all(color: validate ? Color(0xFFF04438) : Color(0xFF060302)),
-            borderRadius: BorderRadius.circular(28),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          margin: EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              Icon(Icons.lock, color: Color(0xFF060302)),
-              SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  obscureText: isObscure,
-                  onChanged: (_) {
-                    stateProvider.resetValidation();
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    border: InputBorder.none,
-                  ),
-                  style: TextStyle(color: Color(0xFF060302)),
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  isObscure ? Icons.visibility : Icons.visibility_off,
-                  color: Color(0xFF060302),
-                ),
-                onPressed: () {
-                  stateProvider.togglePasswordVisibility();
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        margin: EdgeInsets.only(bottom: 10),
+        child: Row(
+          children: [
+            Icon(icon, color: Color(0xFF060302)),
+            SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                onChanged: (_) {
+                  stateProvider.resetValidation();
                 },
+                decoration: InputDecoration(
+                  hintText: label,
+                  border: InputBorder.none,
+                ),
+                style: TextStyle(color: Color(0xFF060302)),
+              ),
+            ),
+          ],
+        ),
+      ),
+      if (validate)
+        Padding(
+          padding: const EdgeInsets.only(left: 20, bottom: 20, right: 20),
+          child: Row(
+            children: [
+              Icon(
+                Icons.error,
+                color: Color(0xFFF04438),
+              ),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  errorMessage,
+                  style: TextStyle(color: Color(0xFFF04438)),
+                ),
               ),
             ],
           ),
         ),
-        if (validate)
-          Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 10, right: 20),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error,
-                  color: Color(0xFFF04438),
+    ],
+  );
+}
+
+Widget _buildPasswordField(
+    bool isObscure,
+    TextEditingController controller,
+    bool validate,
+    LoginStateProvider stateProvider,
+    ) {
+  return Column(
+    children: [
+      Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          border: Border.all(color: validate ? Color(0xFFF04438) : Color(0xFF060302)),
+          borderRadius: BorderRadius.circular(28),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        margin: EdgeInsets.only(bottom: 10),
+        child: Row(
+          children: [
+            Icon(Icons.lock, color: Color(0xFF060302)),
+            SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                obscureText: isObscure,
+                onChanged: (_) {
+                  stateProvider.resetValidation();
+                },
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                  border: InputBorder.none,
                 ),
-                SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Please enter the correct password.',
-                    style: TextStyle(color: Color(0xFFF04438)),
-                  ),
-                ),
-              ],
+                style: TextStyle(color: Color(0xFF060302)),
+              ),
             ),
+            IconButton(
+              icon: Icon(
+                isObscure ? Icons.visibility : Icons.visibility_off,
+                color: Color(0xFF060302),
+              ),
+              onPressed: () {
+                stateProvider.togglePasswordVisibility();
+              },
+            ),
+          ],
+        ),
+      ),
+      if (validate)
+        Padding(
+          padding: const EdgeInsets.only(left: 20, bottom: 10, right: 20),
+          child: Row(
+            children: [
+              Icon(
+                Icons.error,
+                color: Color(0xFFF04438),
+              ),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Please enter the correct password.',
+                  style: TextStyle(color: Color(0xFFF04438)),
+                ),
+              ),
+            ],
           ),
-      ],
-    );
-  }
+        ),
+    ],
+  );
+}
 
 
 class CreateAccountStateProvider extends ChangeNotifier {
@@ -1009,8 +1008,8 @@ class CreateAccountStateProvider extends ChangeNotifier {
     return email.contains('@');
   }
 }
-
-Future<void> _signup(BuildContext context) async {
+/**
+    Future<void> _signup(BuildContext context) async {
     // Get email, password, and name from your state provider
     final stateProvider = Provider.of<CreateAccountStateProvider>(context, listen: false);
     final email = stateProvider.emailController.text;
@@ -1018,33 +1017,29 @@ Future<void> _signup(BuildContext context) async {
     final name = stateProvider.usernameController.text;
 
     // Your API endpoint
-    final apiUrl = 'http://localhost:3000/api/signup';
+    final apiUrl = 'http://10.7.112.224:3000/api/signup';
 
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password, 'name': name}),
-      );
+    final response = await http.post(
+    Uri.parse(apiUrl),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'email': email, 'password': password, 'name': name}),
+    );
 
-      if (response.statusCode == 201) {
-        // Successful signup, handle the response accordingly
-        print('Account created successfully');
-        ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Account Created Successfully !!"),
-          duration: Duration(seconds: 3),
-        ),
-      );
-      } else {
-        // Handle other status codes or errors
-        print('Account creation failed: ${response.statusCode}');
-      }
-    } catch (error) {
-      // Handle network or other errors
-      print('Error during account creation: $error');
+    if (response.statusCode == 201) {
+    // Successful signup, handle the response accordingly
+    print('Account created successfully');
+    } else {
+    // Handle other status codes or errors
+    print('Account creation failed: ${response.statusCode}');
     }
-  }
+    } catch (error) {
+    // Handle network or other errors
+    print('Error during account creation: $error');
+    }
+    }
+
+ **/
 
 
 class CreateAccountPage extends StatelessWidget {
@@ -1052,8 +1047,8 @@ class CreateAccountPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create Account'),
-      ),
+        title: Text('Create Account',style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)),
+        centerTitle: true,),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(35.0),
@@ -1174,9 +1169,9 @@ class CreateAccountPage extends StatelessWidget {
                   SizedBox(height: 16),
 
                   ElevatedButton(
-                    onPressed: () async {
+                    onPressed: () {
                       stateProvider.validateFields(context);
-                      await _signup(context);
+                      //   await _signup(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF3787FF),
@@ -1600,6 +1595,920 @@ class PrivacyPolicyPage extends StatelessWidget {
   }
 }
 
+class VideoPolicy extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/videoUpload');
+          },
+        ),
+        title: Text('Video Policy',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(30.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'The following policies are made for the well being and benefit of the community please adhere to them.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+
+
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                'Upload Rules',
+                style: TextStyle(
+                  color: Color(0xFF202244),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                '- Video duration must be between 5 to 18 minutes.'
+                    '- The sound and video quality must be in the 480p to 1080p range.'
+                    '- The file format should be MP4.',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                'Content Rules',
+                style: TextStyle(
+                  color: Color(0xFF202244),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                '- The content should be relevant to the topic'
+                    '- The content should not be plagiarized'
+                    '- There should not be any type of explicit or immoral content',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class AboutUs extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/settings');
+          },
+        ),
+        title: Text('About Us',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(30.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Heading "Condition & Attending"
+            Text(
+              'About Us',
+              style: TextStyle(
+                color: Color(0xFF202244),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            // Justified text below the heading
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'We are the driving force behind "Edu-Connect," your trusted educational companion. '
+                    'Committed to democratizing learning, we bring students, educators, and innovators together. '
+                    'Our passion lies in crafting a unique space where knowledge knows no boundaries.'
+                'With a blend of AI-powered solutions and crowd-sourced wisdom, we empower every learner.'
+                'We are dedicated to breaking down educational barriers, providing contextually accurate support, and fostering a vibrant community.'
+              ' At "Edu-Connect," our mission is to create a global network of learners and educators, united in the pursuit of knowledge. '
+                'Join us on this enlightening journey!',
+                style: TextStyle(
+                  color: Color(0xFF545454),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+
+          ],
+        ),
+      ),
+    );
+  }
+}
+// Define the HomeStateProvider class for state management
+class HomeStateProvider extends ChangeNotifier {
+  // Add any state variables or functions needed for the Home page
+}
+
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ChangeNotifierProvider(
+        create: (context) => HomeStateProvider(),
+        child: _buildHomePage(context),
+      ),
+    );
+  }
+
+  Widget _buildHomePage(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildHeader(context),
+          _buildWhatWeDo(context), // Pass the context here
+          _buildBanners(context),
+          _buildSeparator(),
+          _buildSeeAllLink(context),
+          _buildTransparentBoxes(context),
+          _buildFooter(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.only(
+          top: 60.0, bottom: 75.0, left: 20.0, right: 20.0),
+
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hi, Username',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF060302),
+                ),
+              ),
+              Text(
+                'Let\'s start learning',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF060302),
+                ),
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/editProfile');
+            },
+            child: CircleAvatar(
+              radius: 25,
+              backgroundImage: AssetImage('assets/Photo.PNG'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWhatWeDo(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(0, -55), // Adjust the offset as needed
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 30),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: Color(0xFFE4F1F8),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 2,
+                blurRadius: 5,
+                offset: Offset(5, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'What we do?',
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF060302),
+                ),
+              ),
+              SizedBox(width: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.5),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/homeVideo');
+                  },
+                  icon: Icon(
+                    Icons.play_circle_filled,
+                    size: 50,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildBanners(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(0, -35), // Adjust the vertical offset
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 15),
+        height: 200,
+        child: PageView(
+          children: [
+            _buildBanner(
+              color: Color(0xFFBD1CAD),
+              title: 'What do you want to learn today?',
+              buttonText: 'Get Started',
+              image: 'assets/banner_image_1.PNG',
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/gradeSection');
+              },
+            ),
+            _buildBanner(
+              color: Color(0xFFCEECFE),
+              title: 'Want to share any useful video?',
+              buttonText: 'Share',
+              image: 'assets/banner_image_2.PNG',
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/videoUpload');
+              },
+            ),
+            _buildBanner(
+              color: Color(0xFF8FAC94),
+              title: 'Are you unable to figure out something?',
+              buttonText: 'Ask us',
+              image: 'assets/banner_image_3b.PNG',
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/chatbot');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildBanner({
+    required Color color,
+    required String title,
+    required String buttonText,
+    required String image,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      height: double.infinity,
+      // Banner will take the entire height
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20, // Increase font size for the title
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF060302),
+                  ),
+                ),
+                SizedBox(height: 12),
+                // Increase spacing between title and button
+                ElevatedButton(
+                  onPressed: onTap,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue, // Set button color to blue
+                    foregroundColor: Colors.white, // Set button text color to white
+                  ),
+                  child: Text(buttonText),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Image.asset(
+              image,
+              fit: BoxFit.cover,
+              height: double.infinity,
+              width: double.infinity,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeparator() {
+    return Transform.translate(
+      offset: Offset(0, -20), // Adjust the vertical offset as needed
+      child: Container(
+        height: 35,
+        color: Color(0xFFF7F8F8),
+      ),
+    );
+  }
+
+  Widget _buildSeeAllLink(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(0, -2),
+      child: Align(
+        alignment: Alignment.topRight,
+        child: Padding(
+          padding: EdgeInsets.only(right: 30),
+          child: GestureDetector(
+            onTap: () {
+              // Navigate to the grade section page
+              Navigator.pushReplacementNamed(context, '/gradeSection');
+            },
+            child: Text(
+              'See all',
+              style: TextStyle(
+                color: Color(0xFF3787FF),
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildTransparentBoxes(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(0, -5), // Adjust the vertical offset as needed
+      child: Row(
+        children: [
+          SizedBox(width: 16), // Equal margin from the left
+          _buildTransparentBox(
+            image: 'assets/grade_image_1.PNG',
+            text: 'Grade 9',
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/subjectSection');
+            },
+          ),
+          SizedBox(width: 8), // Adjust the spacing between boxes
+          _buildTransparentBox(
+            image: 'assets/grade_image_2.PNG',
+            text: 'Grade 10',
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/subjectSection');
+            },
+          ),
+          SizedBox(width: 16), // Equal margin from the right
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransparentBox({
+    required String image,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 160,
+      // Set the desired width for each box
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Color(0xFF3787FF),
+          width: 1.3, // Set the desired border thickness
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      margin: EdgeInsets.symmetric(horizontal: 7.5),
+      // Equal margin from left and right
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: double.infinity,
+              height: 80, // Set the desired height for the image
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Image.asset(
+                image,
+                width: 150, // Set the desired width for the image
+                height: 90, // Set the desired height for the image
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 18, // Increase font size for the text
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF060302),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Transform.translate(
+        offset: Offset(0, 15), // Adjust the vertical offset as needed
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(50),
+              topRight: Radius.circular(50),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildFooterItem(
+                  icon: 'assets/chat_bot_icon.PNG',
+                  text: 'Chat Bot',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/chatbotpage');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/video_upload_icon.png',
+                  text: 'Video Upload',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/videoUpload');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/home_icon.png',
+                  text: 'Home',
+                  isActive: true,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/favorities_icon.PNG',
+                  text: 'Favorites',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/favorites');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/settings_icon.png',
+                  text: 'Settings',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/settings');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterItem({
+    required String icon,
+    required String text,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            icon,
+            width: 50, // Adjust the size as needed
+            height: 50,
+            color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+          ),
+          SizedBox(height: 0.1),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingsProvider extends ChangeNotifier {
+  bool studyRemindersEnabled = true;
+
+
+  void toggleStudyReminders() {
+    studyRemindersEnabled = !studyRemindersEnabled;
+    notifyListeners();
+  }
+}
+
+class SettingsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Account'),
+            _buildSettingsItem('Profile settings', 'edit', '/editProfile', context),
+            _buildSeparator(),
+            _buildSectionHeader('Security'),
+            _buildSettingsItem('Password change', 'change', '/changePassword', context),
+            _buildSeparator(),
+            _buildSectionHeader('Study Reminders'),
+            _buildToggleItem('Receive reminders', context),
+            _buildSeparator(),
+            _buildSectionHeader('Networking'),
+            _buildSettingsItemWithIcon('Invite friends', Icons.arrow_forward, '/inviteFriends',context),
+            _buildSeparator(),
+            _buildSectionHeader('Help & Support'),
+            _buildSettingsItemWithIcon('About us', Icons.arrow_forward,'/aboutUs',context),
+            _buildSettingsItemWithIcon(
+                'Terms & Condition', Icons.arrow_forward,'/termsAndConditions',context),
+            _buildSettingsItemWithIcon('Privacy Policy', Icons.arrow_forward, '/privacyPolicy',context),
+            _buildLogoutButton(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem(String text, String buttonText, String route, BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF767372),
+                ),
+              ),
+            ],
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // Handle button click based on the provided route
+            Navigator.pushReplacementNamed(context, route);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+          child: Text(buttonText),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildSettingsItemWithIcon(String text, IconData icon, String route, BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      child: InkWell(
+        onTap: () {
+          // Handle item click
+          Navigator.pushReplacementNamed(context, route);
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF767372),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              icon,
+              color: Color(0xFF060302),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleItem(String text, BuildContext context) {
+    return Consumer<SettingsProvider>(
+      builder: (context, settingsProvider, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF767372),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: settingsProvider.studyRemindersEnabled,
+              onChanged: (newValue) {
+                // Handle switch change
+                settingsProvider.toggleStudyReminders();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSeparator() {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10),
+      height: 1,
+      color: Color(0xFFCFD1D4),
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 16),
+        child: ElevatedButton(
+          onPressed: () {
+            _showLogoutDialog(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              'Logout',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLogoutDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Center(
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            contentPadding: EdgeInsets.all(16.0),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.logout, size: 60, color: Colors.black),
+                SizedBox(height: 16),
+                Text(
+                  'Logout',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'Are you sure you want to sign out of your account?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF767372),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide(color: Colors.blue),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8), // Add spacing between buttons
+                  ElevatedButton(
+                    onPressed: () {
+                      // Handle logout logic
+                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.pushReplacementNamed(
+                          context, '/login'); // Navigate to login page
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                    child: Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 // State provider class for Forgot Password Page
 class StateProviderForgotPassword extends ChangeNotifier {
@@ -1638,7 +2547,17 @@ class ForgotPasswordPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Forgot Password'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/login');
+          },
+        ),
+        title: Text('Forgot Password',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
       ),
       body: Center(
         child: Padding(
@@ -1712,53 +2631,17 @@ class ForgotPasswordPage extends StatelessWidget {
     );
   }
 
-  Future<void> sendPasswordResetEmail(
-      BuildContext context, String email) async {
-    try {
-      final response = await http.post(
-        Uri.parse('http://localhost:3000/api/reset-password'),
-        body: {'email': email},
-      );
-
-      if (response.statusCode == 200) {
-        // Password reset email sent successfully
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Password reset email sent successfully'),
-          duration: Duration(seconds: 2),
-        ));
-      } else {
-        // Error sending password reset email
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error sending password reset email'),
-          duration: Duration(seconds: 2),
-        ));
-      }
-    } catch (e) {
-      print(e.toString());
-      // Handle other exceptions
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error sending password reset email'),
-        duration: Duration(seconds: 2),
-      ));
-    }
-  }
 
   // Function to handle the "Continue" button click
-  void _handleContinueButton(BuildContext context, ForgotPasswordProvider stateProvider) async {
+  void _handleContinueButton(BuildContext context, ForgotPasswordProvider stateProvider) {
     stateProvider.validateFields(context);
-    if (!stateProvider.validateEmail) {
+
+    if (stateProvider.validateEmail) {
       // Display error message for required or invalid email
       stateProvider.setErrorMessage('Please enter a valid email.');
     } else {
-      try {
-        await sendPasswordResetEmail(
-            context, stateProvider.emailController.text);
-      } catch (e) {
-        print(e.toString());
-        // Handle other exceptions
-      }
-      // If email is registered, navigate to the login Page
-      Navigator.pushReplacementNamed(context, '/login');
+      // If email is registered, navigate to the Verification Code Page
+      Navigator.pushReplacementNamed(context, '/verificationCode');
     }
   }
 
@@ -1994,8 +2877,17 @@ class _VerificationCodePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Enter a Code'),
+      appBar: AppBar( leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () {
+          // Navigate to the grade section page
+          Navigator.pushReplacementNamed(context, '/forgotPassword');
+        },
+      ),
+        title: Text('Enter a Code',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
       ),
       body: Center(
         child: Padding(
@@ -2133,7 +3025,7 @@ class _VerificationCodePage extends StatelessWidget {
                       ),
                     ],
                   )
-                 :InkWell(
+                      :InkWell(
                     onTap: () {
                       provider.toggleCodeSent();
                     },
@@ -2205,7 +3097,17 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Change Password'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+        ),
+          title: Text('Change Password',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
       ),
       body: Center(
         child: Padding(
@@ -2228,7 +3130,7 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
 
               SizedBox(height: 4),
               Text(
-                'Your password length consists of 8-characters atleast.',
+                'Your password length consists of 8 characters at least.',
                 style: TextStyle(
                   color: Color(0xFF767372),
                 ),
@@ -2250,14 +3152,15 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
                     borderSide: BorderSide(color: Color(0xFF060302)),
                     borderRadius: BorderRadius.circular(28),
                   ),
-                  errorText: provider.newPasswordError.isNotEmpty ? provider.newPasswordError : null,
-                  errorStyle: TextStyle(color: Colors.red),
                   suffixIcon: IconButton(
                     icon: Icon(provider.showNewPassword ? Icons.visibility : Icons.visibility_off),
                     onPressed: () => provider.toggleNewPasswordVisibility(),
                   ),
+
                 ),
-                onChanged: (value) => provider.validatePasswords(),
+                onChanged: (value) {
+                  provider.validatePasswords();
+                },
               ),
 
               SizedBox(height: 16),
@@ -2275,24 +3178,65 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
                     borderSide: BorderSide(color: Color(0xFF060302)),
                     borderRadius: BorderRadius.circular(28),
                   ),
-                  errorText: provider.confirmPasswordError.isNotEmpty ? provider.confirmPasswordError : null,
-                  errorStyle: TextStyle(color: Colors.red),
                   suffixIcon: IconButton(
                     icon: Icon(provider.showConfirmPassword ? Icons.visibility : Icons.visibility_off),
                     onPressed: () => provider.toggleConfirmPasswordVisibility(),
                   ),
+
                 ),
-                onChanged: (value) => provider.validatePasswords(),
+                onChanged: (value) {
+                  provider.validatePasswords();
+                },
               ),
 
               SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
+              /**ElevatedButton(
+                  onPressed: () {
+                  setState(() {
                   provider.validatePasswords();
                   if (provider.newPasswordError.isEmpty && provider.confirmPasswordError.isEmpty) {
-
-                    Navigator.pushReplacementNamed(context, '/passwordChanged');
+                  Navigator.pushReplacementNamed(context, '/passwordChanged');
                   }
+                  else{
+                  errorText: provider.newPasswordError.isNotEmpty ? provider.newPasswordError : null,
+                  errorStyle: TextStyle(color: Colors.red),
+                  errorText: provider.confirmPasswordError.isNotEmpty ? provider.confirmPasswordError : null,
+                  errorStyle: TextStyle(color: Colors.red),
+                  }
+                  });
+                  },
+                  style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF3787FF),
+                  shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  ),
+                  ),
+                  child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  child: Text(
+                  'Save Password',
+                  style: TextStyle(color: Colors.white),
+                  ),
+                  ),
+                  )**/
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    provider.validatePasswords();
+                    if (provider.newPasswordError.isEmpty && provider.confirmPasswordError.isEmpty) {
+                      Navigator.pushReplacementNamed(context, '/passwordChanged');
+                    } else {
+                      // Show error messages
+                      provider.newPasswordError.isNotEmpty
+                          ? provider.newPasswordError
+                          : null;
+                      provider.confirmPasswordError.isNotEmpty
+                          ? provider.confirmPasswordError
+                          : null;
+                      // Set error styles
+                      errorStyle: TextStyle(color: Colors.red);
+                    }
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF3787FF),
@@ -2307,7 +3251,8 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
-              ),
+              )
+
             ],
           ),
         ),
@@ -2315,3 +3260,2109 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
     );
   }
 }
+
+
+
+class GradeSectionPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+        ),
+        title: Text(
+          'Grade Section',
+          style: TextStyle(color: Colors.black, fontSize: 27, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          padding: EdgeInsets.only(top: 20), // Adjust the top padding as needed
+          children: [
+            Center(
+              child: Text(
+                'Select your grade.',
+                style: TextStyle(
+                  color: Color(0xFF000000),
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            _buildGradeBox('Grade 9', 'assets/grade_image_1.PNG', '/subjectSection', context),
+            _buildGradeBox('Grade 10', 'assets/grade_image_2.PNG', '/subjectSection', context),
+            _buildGradeBox('Grade 11', 'assets/grade_image_3.PNG', '/subjectSection', context),
+            _buildGradeBox('Grade 12', 'assets/grade_image_4.PNG', '/subjectSection', context),
+          ],
+        ),
+      ),
+    );
+  }
+}
+Widget _buildGradeBox(String grade, String imagePath, String route, BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.pushReplacementNamed(context, route);
+    },
+    child: Container(
+      margin: EdgeInsets.only(bottom: 20, right: 25, left: 25), // Adjust the right margin as needed
+      padding: EdgeInsets.only(top: 2, bottom:2, left :30, right: 15 ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Color(0xFF3787FF), width: 1.5,),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            grade,
+            style: TextStyle(
+                color: Color(0xFF3787FF),
+                fontSize: 23,
+                fontWeight: FontWeight.bold
+            ),
+          ),
+          SizedBox(width: 10), // Add spacing between text and image
+          Image.asset(
+            imagePath,
+            width: 120,
+            height: 120,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/**
+    Widget _buildFooter(BuildContext context) {
+    return Positioned(
+    bottom: 0,
+    left: 0,
+    right: 0,
+    child: Transform.translate(
+    offset: Offset(0, -2),
+    child: Container(
+    decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.only(
+    topLeft: Radius.circular(50),
+    topRight: Radius.circular(50),
+    ),
+    ),
+    child: Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+    child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+    _buildFooterItem(
+    icon: 'assets/chat_bot_icon.PNG',
+    text: 'Chat Bot',
+    isActive: false,
+    onTap: () {
+    Navigator.pushReplacementNamed(context, '/chatbotpage');
+    },
+    ),
+    _buildFooterItem(
+    icon: 'assets/video_upload_icon.png',
+    text: 'Video Upload',
+    isActive: false,
+    onTap: () {
+    Navigator.pushReplacementNamed(context, '/videouploadpage');
+    },
+    ),
+    _buildFooterItem(
+    icon: 'assets/home_icon.png',
+    text: 'Home',
+    isActive: false,
+    onTap: () {
+    Navigator.pushReplacementNamed(context, '/home');
+    },
+    ),
+    _buildFooterItem(
+    icon: 'assets/favorities_icon.PNG',
+    text: 'Favorites',
+    isActive: false,
+    onTap: () {
+    Navigator.pushReplacementNamed(context, '/favoritespage');
+    },
+    ),
+    _buildFooterItem(
+    icon: 'assets/settings_icon.png',
+    text: 'Settings',
+    isActive: false,
+    onTap: () {
+    Navigator.pushReplacementNamed(context, '/settings');
+    },
+    ),
+    ],
+    ),
+    ),
+    ),
+    ),
+    );
+    }
+
+    Widget _buildFooterItem({
+    required String icon,
+    required String text,
+    required bool isActive,
+    required VoidCallback onTap,
+    }) {
+    return GestureDetector(
+    onTap: onTap,
+    child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+    Image.asset(
+    icon,
+    width: 50,
+    height: 50,
+    color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+    ),
+    SizedBox(height: 0.1),
+    Text(
+    text,
+    style: TextStyle(
+    fontSize: 12,
+    color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+    ),
+    ),
+    ],
+    ),
+    );
+    }
+ **/
+
+
+class SubjectSectionPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/gradeSection');
+          },
+        ),
+        title: Text(
+          'Subject Section',
+          style: TextStyle(color: Colors.black,fontSize: 27, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          padding: EdgeInsets.only(top: 20), // Adjust the top padding as needed
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 35.0), // Adjust left and right padding as needed
+                child: Text(
+                  'Select the subject which you want to study.',
+                  style: TextStyle(
+                    color: Color(0xFF000000),
+                    fontSize: 20,
+                  ),
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            _buildSubjectBox('Maths', 'assets/sub_image_1.PNG', '/learningSection', context),
+            _buildSubjectBox('Biology', 'assets/sub_image_2.PNG', '/learningSection', context),
+            _buildSubjectBox('Chemistry', 'assets/sub_image_3.PNG', '/learningSection', context),
+            _buildSubjectBox('Physics', 'assets/sub_image_4.PNG', '/learningSection', context),
+          ],
+        ),
+      ),
+    );
+  }
+}
+Widget _buildSubjectBox(String grade, String imagePath, String route, BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.pushReplacementNamed(context, route);
+    },
+    child: Container(
+      margin: EdgeInsets.only(bottom: 20, right: 25, left: 25), // Adjust the right margin as needed
+      padding: EdgeInsets.only(top: 2, bottom:2, left :30, right: 15 ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Color(0xFF3787FF), width: 1.5,),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            grade,
+            style: TextStyle(
+                color: Color(0xFF3787FF),
+                fontSize: 23,
+                fontWeight: FontWeight.bold
+            ),
+          ),
+          SizedBox(width: 10), // Add spacing between text and image
+          Image.asset(
+            imagePath,
+            width: 120,
+            height: 120,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+class LearningSectionPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/subjectSection');
+          },
+        ),
+        title: Text(
+          'Learning Section',
+          style: TextStyle(color: Colors.black, fontSize: 27, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          padding: EdgeInsets.only(top: 20), // Adjust the top padding as needed
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 35.0), // Adjust left and right padding as needed
+                child: Text(
+                  'Watch videos or test your knowledge through our quizzes.',
+                  style: TextStyle(
+                    color: Color(0xFF000000),
+                    fontSize: 20,
+                  ),
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            _buildLearnBox('Videos', 'assets/learn_image_1.PNG', '/videoSearch', context),
+            _buildLearnBox('Quizzes', 'assets/learn_image_2.PNG', '/videoSearch', context),
+          ],
+        ),
+      ),
+    );
+  }
+}
+Widget _buildLearnBox(String grade, String imagePath, String route, BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      Navigator.pushReplacementNamed(context, route);
+    },
+    child: Container(
+      margin: EdgeInsets.only(bottom: 20, right: 25, left: 25), // Adjust the right margin as needed
+      padding: EdgeInsets.only(top: 2, bottom:2, left :30, right: 15 ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Color(0xFF3787FF), width: 1.5,),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            grade,
+            style: TextStyle(
+                color: Color(0xFF3787FF),
+                fontSize: 23,
+                fontWeight: FontWeight.bold
+            ),
+          ),
+          SizedBox(width: 10), // Add spacing between text and image
+          Image.asset(
+            imagePath,
+            width: 120,
+            height: 120,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class EditProfilePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<EditProfileProvider>(context);
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+        ),
+        title: Text('Edit Profile',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
+        actions: [
+          GestureDetector(
+            onTap: () {
+              // Navigate to the profile edited page
+              Navigator.pushReplacementNamed(context, '/profileEdited');
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Done',
+                style: TextStyle(color: Colors.blue, fontSize: 20),
+              ),
+            ),
+          ),
+        ],
+
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(35.0),
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: AssetImage('assets/Photo.PNG'),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Handle Edit Profile Pic button press
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric( vertical: 12),
+                  child: Text(
+                    'Edit Photo',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              _buildInputField('FULL NAME', 'Ayana Nana', 'The username is already taken'),
+              _buildInputField('EMAIL', 'ayananana@gmail.com', 'The username is already registered or invalid'),
+              _buildSelector('GENDER', 'Optional', ['Male', 'Female', 'Other']),
+              _buildSelector('BIRTHDAY', 'Optional', ['Day 1', 'Day 2', 'Day 3']), // Replace with actual date options
+              _buildSelector('GRADE', 'Your class/level', ['9', '10', '11', '12']),
+              _buildSelector('BOARD', 'Optional', ['Sindh', 'Punjab', 'KPK', 'Balochistan']),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField(String heading, String hintText, String errorMessage) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          heading,
+          style: TextStyle(
+            color: Color(0xFF353945),fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: Color(0xFF060302)),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          margin: EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(color: Color(0xFF767372)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+       _buildErrorMessage(errorMessage),
+      ],
+    );
+  }
+
+  Widget _buildSelector(String heading, String hintText, List<String> options) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          heading,
+          style: TextStyle(
+            color: Color(0xFF353945),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: Color(0xFF060302)),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          margin: EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField(
+                  items: options.map((String option) {
+                    return DropdownMenuItem(
+                      value: option,
+                      child: Text(
+                        option,
+                        style: TextStyle(color: Color(0xFF353945)),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    // Handle selected value
+                  },
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(color: Color(0xFF767372)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorMessage(String errorMessage) {
+    if (errorMessage.isEmpty) {
+      return SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, bottom: 10, right: 20),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error,
+            color: Color(0xFFF04438),
+          ),
+          SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              errorMessage,
+              style: TextStyle(color: Color(0xFFF04438)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EditProfileProvider with ChangeNotifier {
+  // Add your state variables here
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+
+  // Add other state variables and methods as needed
+
+  // Example method to handle form validation
+  void validateFields(BuildContext context) {
+    // Add your validation logic here
+    // Notify listeners if needed
+    notifyListeners();
+  }
+}
+
+class ProfileeditedProvider extends ChangeNotifier {
+  // You can add any state or methods relevant to this page
+
+  void someMethod() {
+    // Some logic here
+  }
+}
+class ProfileeditedPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => ProfileeditedProvider(),
+      child: _ProfileeditedContent(),
+    );
+  }
+}
+
+class _ProfileeditedContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var provider = Provider.of<ProfileeditedProvider>(context, listen: false);
+
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 164, color: Colors.green),
+            SizedBox(height: 2),
+            Text(
+              'Profile edited Successfully!',
+              style: TextStyle(color: Color(0xFF060302), fontSize: 25, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 25),
+              child: Text(
+                'Congratulations, you have successfully edited your profile!',
+                style: TextStyle(color: Color(0xFF767372)),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // You can call any methods from the provider here
+                provider.someMethod();
+                Navigator.pushReplacementNamed(context, '/home');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3787FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                child: Text(
+                  'Done',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+class VideoUploadedProvider extends ChangeNotifier {
+  // You can add any state or methods relevant to this page
+
+  void someMethod() {
+    // Some logic here
+  }
+}
+class VideoUploadedPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => VideoUploadedProvider(),
+      child: _VideoUploadedPageContent(),
+    );
+  }
+}
+
+class _VideoUploadedPageContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var provider = Provider.of<VideoUploadedProvider>(context, listen: false);
+
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 164, color: Colors.green),
+            SizedBox(height: 2),
+            Text(
+              'Video Uploaded Successfully!',
+              style: TextStyle(color: Color(0xFF060302), fontSize: 25, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 25),
+              child: Text(
+                'Congratulations, you have successfully contributed in the community!',
+                style: TextStyle(color: Color(0xFF767372)),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // You can call any methods from the provider here
+                provider.someMethod();
+                Navigator.pushReplacementNamed(context, '/home');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3787FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                child: Text(
+                  'Done',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+class VideoUploadProvider with ChangeNotifier {
+  double _uploadProgress = 0.0;
+
+  double get uploadProgress => _uploadProgress;
+
+  void updateProgress(double progress) {
+    _uploadProgress = progress;
+    notifyListeners();
+  }
+}
+
+class VideoUploadPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => VideoUploadProvider(),
+      child: _VideoUploadPage(),
+    );
+  }
+}
+
+class _VideoUploadPage extends StatefulWidget {
+  @override
+  __VideoUploadPageState createState() => __VideoUploadPageState();
+}
+
+class __VideoUploadPageState extends State<_VideoUploadPage> {
+  File? _selectedVideo;
+  late VideoUploadProvider _uploadProvider;
+
+  @override
+  Widget build(BuildContext context) {
+    _uploadProvider = Provider.of<VideoUploadProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Center(
+                child: Container(
+                  margin: EdgeInsets.only(left: 60.0),
+                  child: Text(
+                    'Video Upload',
+                    style: TextStyle(fontSize: 27, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 0),
+            GestureDetector(
+              onTap: () {
+                // Navigate to VideoUploadedPage
+                Navigator.pushReplacementNamed(context, '/videoUploaded');
+              },
+              child: Text('Upload', style: TextStyle(color: Colors.blue, fontSize: 20)),
+            ),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                margin: EdgeInsets.only(top: 10.0),
+                child: Text(
+                  'Upload your videos and contribute to the community',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 19),
+                ),
+              ),
+            ),
+            _buildFieldWithIcon('Video guidelines and rules', Icons.arrow_forward_ios),
+            _buildFieldWithIcon('Select Video', Icons.video_library, onSelectVideo),
+            _buildTextField('Video Title'),
+            _buildTextField('Video Description', height: 100.0),
+            _buildDropDownField('Select Grade', ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12']),
+            _buildDropDownField('Subject', ['Biology', 'Physics', 'Maths', 'Chemistry']),
+            if (_selectedVideo != null) _buildUploadSection(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildFooter(context),
+    );
+  }
+  Widget _buildFieldWithIcon(String text, IconData icon, [VoidCallback? onTap]) {
+    return GestureDetector(
+      onTap: () {
+        // Check if the clicked field is "Video guidelines and rules"
+        if (text == 'Video guidelines and rules') {
+          // Navigate to VideoPolicyPage
+          Navigator.pushReplacementNamed(context, '/videoPolicy');
+        } else if (onTap != null) {
+          // Call the onTap function for other fields
+          onTap();
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15.0),
+          border: Border.all(color: Color(0xFF9E9E9E), width: 1.4),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(text, style: TextStyle(color: Color(0xFF9E9E9E))),
+            Icon(icon, color: Color(0xFF9E9E9E)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String hintText, {double height = 50.0}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.0),
+        border: Border.all(color: Color(0xFF9E9E9E)),
+      ),
+      child: TextField(
+        maxLines: height == 100.0 ? 4 : 1,
+        decoration: InputDecoration(
+          hintText: hintText,
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropDownField(String hintText, List<String> options) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.0),
+        border: Border.all(color: Color(0xFF9E9E9E)),
+      ),
+      child: DropdownButtonFormField(
+        items: options.map((String option) {
+          return DropdownMenuItem(
+            value: option,
+            child: Text(option),
+          );
+        }).toList(),
+        onChanged: (value) {
+          // Handle selected value
+        },
+        decoration: InputDecoration(
+          hintText: hintText,
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Transform.translate(
+        offset: Offset(0, -2),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(50),
+              topRight: Radius.circular(50),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildFooterItem(
+                  icon: 'assets/chat_bot_icon.PNG',
+                  text: 'Chat Bot',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/chatbotpage');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/video_upload_icon.png',
+                  text: 'Video Upload',
+                  isActive: true,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/videoUpload');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/home_icon.png',
+                  text: 'Home',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/favorities_icon.PNG',
+                  text: 'Favorites',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/favorites');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/settings_icon.png',
+                  text: 'Settings',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/settings');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterItem({
+    required String icon,
+    required String text,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            icon,
+            width: 50,
+            height: 50,
+            color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+          ),
+          SizedBox(height: 0.1),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void onSelectVideo() async {
+    final pickedFile = await ImagePicker().getVideo(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedVideo = File(pickedFile.path);
+      });
+    }
+  }
+
+  Widget _buildUploadSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: 16),
+        Text(
+          'Video Upload Progress:',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: _uploadProvider.uploadProgress,
+        ),
+        SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: uploadVideo,
+          child: Text('Upload Video'),
+        ),
+      ],
+    );
+  }
+
+  void uploadVideo() async {
+    if (_selectedVideo == null) {
+      // Show error message, no video selected
+      return;
+    }
+
+    try {
+      Dio dio = Dio();
+      String uploadUrl = 'YOUR_UPLOAD_API_URL'; // Replace with your API endpoint
+
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          _selectedVideo!.path,
+          filename: 'video.mp4',
+        ),
+      });
+
+      await dio.post(
+        uploadUrl,
+        data: formData,
+        onSendProgress: (int sent, int total) {
+          double progress = sent / total;
+          _uploadProvider.updateProgress(progress);
+        },
+      );
+
+      // Video uploaded successfully, navigate or show a success message
+    } catch (e) {
+      // Handle upload error
+      print('Upload error: $e');
+    }
+  }
+}
+
+class FavoritesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Favorites', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold,fontSize: 27)),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          SizedBox(height: 16),
+          Center(
+            child: Container(
+              margin: EdgeInsets.only(top:10.0,left:25.0, right:25.0), // Adjust the margin as needed
+              child: Text(
+                'Videos added by you in favorites will be shown here.',
+                style: TextStyle(color: Colors.black, fontSize: 17),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+          ),
+          SizedBox(height: 0),
+          Expanded(
+            child: ListView.builder(
+              itemCount: 10, // Replace with the actual number of videos
+              itemBuilder: (context, index) {
+                return _buildVideoItem(
+                  thumbnailUrl: 'assets/banner_image_3.jpg', // Replace with the actual thumbnail URL
+                  caption: 'Video Caption $index', // Replace with the actual video caption
+                  uploaderName: 'Uploader Name', // Replace with the actual uploader name
+                  views: '100 views', // Replace with the actual number of views
+                  uploadTime: '2 days ago', // Replace with the actual upload time
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildFooter(context),
+    );
+  }
+  Widget _buildVideoItem({
+    required String thumbnailUrl,
+    required String caption,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+      padding: EdgeInsets.all(16.0), // Added padding
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0), // Increased the border radius
+        border: Border.all(color: Color(0xFF808191), width:1.3,),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(
+              thumbnailUrl,
+              width: 120,
+              height: 90,
+              fit: BoxFit.cover,
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  caption,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'By $uploaderName',
+                  style: TextStyle(fontSize: 16, color: Color(0xFF808191)),
+                ),
+                SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(Icons.remove_red_eye, size: 16, color: Color(0xFF808191)),
+                    SizedBox(width: 4),
+                    Text(
+                      views,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.fiber_manual_record, size: 6, color: Color(0xFF808191)),
+                    SizedBox(width: 8),
+                    Text(
+                      uploadTime,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildFooter(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Transform.translate(
+        offset: Offset(0, -2),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(50),
+              topRight: Radius.circular(50),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildFooterItem(
+                  icon: 'assets/chat_bot_icon.PNG',
+                  text: 'Chat Bot',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/chatbot');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/video_upload_icon.png',
+                  text: 'Video Upload',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/videoUpload');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/home_icon.png',
+                  text: 'Home',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/favorities_icon.PNG',
+                  text: 'Favorites',
+                  isActive: true,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/favorites');
+                  },
+                ),
+                _buildFooterItem(
+                  icon: 'assets/settings_icon.png',
+                  text: 'Settings',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/settings');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterItem({
+    required String icon,
+    required String text,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            icon,
+            width: 50,
+            height: 50,
+            color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+          ),
+          SizedBox(height: 0.1),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: isActive ? Color(0xFF3787FF) : Color(0xFF767372),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class VideoSearchProvider extends ChangeNotifier {
+  TextEditingController searchController = TextEditingController();
+  bool isSearchEmpty = false;
+
+  void updateSearch() {
+    isSearchEmpty = searchController.text.isEmpty;
+    notifyListeners();
+  }
+}
+
+class VideoSearchPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => VideoSearchProvider(),
+      child: _VideoSearchPage(),
+    );
+  }
+}
+
+class _VideoSearchPage extends StatefulWidget {
+  @override
+  __VideoSearchPageState createState() => __VideoSearchPageState();
+}
+
+class __VideoSearchPageState extends State<_VideoSearchPage> {
+  @override
+  Widget build(BuildContext context) {
+    var searchProvider = Provider.of<VideoSearchProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/learningSection');
+          },
+        ),
+        title: Text('Video Section', style: TextStyle(
+            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 26)),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          SizedBox(height: 20),
+          Center(
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 25.0),
+              child: Text(
+                'Learn through the uploaded content',
+                style: TextStyle(color: Colors.black, fontSize: 20),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+          ),
+          SizedBox(height: 10),
+          _buildSearchBar(context, searchProvider),
+          SizedBox(height: 16),
+          _buildSearchResults(context, searchProvider),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context,
+      VideoSearchProvider searchProvider) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30.0),
+        border: Border.all(color: Colors.blue, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.search, color: Colors.blue),
+            onPressed: () {
+              // Implement search action
+              searchProvider.updateSearch();
+            },
+          ),
+          Expanded(
+            child: TextField(
+              controller: searchProvider.searchController,
+              decoration: InputDecoration(
+                hintText: 'Search',
+                border: InputBorder.none,
+              ),
+              onChanged: (value) {
+                searchProvider.updateSearch();
+              },
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.filter_list, color: Colors.blue),
+            onPressed: () {
+              // Implement filter action
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResults() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(height: 50),
+        Image.asset('assets/not_found.PNG'), // Replace with your image asset
+        SizedBox(height: 16),
+        Text(
+          'Video Not Found',
+          style: TextStyle(color: Colors.black, fontSize: 20),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults(BuildContext context,
+      VideoSearchProvider searchProvider) {
+    return searchProvider.isSearchEmpty
+        ? _buildNoResults()
+        : Expanded(
+      child: ListView.builder(
+        itemCount: 10, // Replace with the actual number of search results
+        itemBuilder: (context, index) {
+          return _buildVideoItem(
+            thumbnailUrl: 'assets/banner_image_3.jpg',
+            // Replace with the actual thumbnail URL
+            caption: 'Video Caption $index',
+            // Replace with the actual video caption
+            uploaderName: 'Uploader Name',
+            // Replace with the actual uploader name
+            views: '100 views',
+            // Replace with the actual number of views
+            uploadTime: '2 days ago',
+            // Replace with the actual upload time
+            context: context,
+          );
+        },
+      ),
+    );
+  }
+  Widget _buildVideoItem({
+    required String thumbnailUrl,
+    required String caption,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+    required BuildContext context,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        // Handle video item click - navigate to /videoWatch
+        Navigator.pushNamed(context, '/videoWatch');
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+        padding: EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20.0),
+          border: Border.all(color: Color(0xFF808191), width: 1.3),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12.0),
+              child: Image.asset(
+                thumbnailUrl,
+                width: 120,
+                height: 90,
+                fit: BoxFit.cover,
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    caption,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () {
+                      // Handle uploader name click - navigate to /uploaderProfile
+                      Navigator.pushReplacementNamed(context, '/uploaderProfile');
+                    },
+                    child: Text(
+                      'By $uploaderName',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF808191),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(Icons.remove_red_eye, size: 16, color: Color(0xFF808191)),
+                      SizedBox(width: 4),
+                      Text(
+                        views,
+                        style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.fiber_manual_record, size: 6, color: Color(0xFF808191)),
+                      SizedBox(width: 8),
+                      Text(
+                        uploadTime,
+                        style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+  class UploaderPage extends StatefulWidget {
+  @override
+  _UploaderPageState createState() => _UploaderPageState();
+}
+
+class _UploaderPageState extends State<UploaderPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/videoSearch');
+          },
+        ),
+        title: Text('Uplaoder Profile', style: TextStyle(
+            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 26)),
+        centerTitle: true,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: 25),
+          _buildUploaderInfo(),
+          SizedBox(height: 16),
+          _buildVideoList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploaderInfo() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 24.0),
+          child: CircleAvatar(
+            radius: 58,
+            backgroundImage: AssetImage('assets/Photo.PNG'), // Replace with actual image
+          ),
+        ),
+        SizedBox(width: 20),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 25),
+            Text(
+              'Uploader Name',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
+            SizedBox(height: 5),
+            Row(
+              children: [
+                Icon(Icons.video_library, size: 22, color: Color(0xFF808191)),
+                SizedBox(width: 4),
+                Text(
+                  '10 Videos', // Replace with the actual count of videos
+                  style: TextStyle(fontSize: 17, color: Color(0xFF808191)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVideoList() {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: 10, // Replace with the actual number of videos
+        itemBuilder: (context, index) {
+          return _buildVideoItem(
+            thumbnailUrl: 'assets/banner_image_3.jpg', // Replace with the actual thumbnail URL
+            caption: 'Video Caption $index', // Replace with the actual video caption
+            uploaderName: 'Uploader Name', // Replace with the actual uploader name
+            views: '100 views', // Replace with the actual number of views
+            uploadTime: '2 days ago', // Replace with the actual upload time
+            context: context,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildVideoItem({
+    required String thumbnailUrl,
+    required String caption,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+    required BuildContext context, // Pass the context to access the Navigator
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+      padding: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0),
+        border: Border.all(color: Color(0xFF808191), width: 1.3),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(
+              thumbnailUrl,
+              width: 120,
+              height: 90,
+              fit: BoxFit.cover,
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  caption,
+                  style: TextStyle(fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black),
+                ),
+                SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {
+                    // Handle uploader name click - navigate to /uploaderProfile
+                    Navigator.pushReplacementNamed(context, '/uploaderProfile');
+                  },
+                  child: Text(
+                    'By $uploaderName',
+                    style: TextStyle(fontSize: 16,
+                        color: Color(0xFF808191),
+                        decoration: TextDecoration.underline),
+                  ),
+                ),
+                SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(Icons.remove_red_eye, size: 16,
+                        color: Color(0xFF808191)),
+                    SizedBox(width: 4),
+                    Text(
+                      views,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.fiber_manual_record, size: 6,
+                        color: Color(0xFF808191)),
+                    SizedBox(width: 8),
+                    Text(
+                      uploadTime,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class VideoWatchHomePage extends StatefulWidget {
+  @override
+  _VideoWatchHomePageState createState() => _VideoWatchHomePageState();
+}
+
+class _VideoWatchHomePageState extends State<VideoWatchHomePage> {
+  late VideoPlayerController _videoPlayerController;
+  late ChewieController _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoPlayerController = VideoPlayerController.asset('assets/Eduitive.mp4');
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController,
+      autoPlay: true,
+      looping: false,
+      aspectRatio: 16 / 9,
+      autoInitialize: true,
+      errorBuilder: (context, errorMessage) {
+        return Center(
+          child: Text(
+            errorMessage,
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      },
+    );
+    _videoPlayerController.initialize();
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController.dispose();
+    _chewieController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+        ),
+        title: Text('What we Do?',
+            style: TextStyle(fontSize: 27,fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
+      ),
+      body: _buildVideoWatchHomePage(
+        videoUrl: 'assets/Eduitive.mp4',
+        title: 'Sample Video Title',
+        uploaderName: 'Uploader Name',
+        views: '100 views',
+        uploadTime: '2 days ago',
+      ),
+    );
+  }
+
+  Widget _buildVideoWatchHomePage({
+    required String videoUrl,
+    required String title,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(0.0), // Remove the top and bottom padding
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+      ),
+      child: Chewie(controller: _chewieController),
+    );
+  }
+}
+
+
+class VideoWatchPage extends StatefulWidget {
+  @override
+  _VideoWatchPageState createState() => _VideoWatchPageState();
+}
+
+class _VideoWatchPageState extends State<VideoWatchPage> {
+  late VideoPlayerController _videoPlayerController;
+  late ChewieController _chewieController;
+  bool isLiked = false;
+  int likeCount = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoPlayerController = VideoPlayerController.asset('assets/Eduitive.mp4');
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController,
+      autoPlay: true,
+      looping: false,
+      aspectRatio: 16 / 9,
+      autoInitialize: true,
+      errorBuilder: (context, errorMessage) {
+        return Center(
+          child: Text(
+            errorMessage,
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      },
+    );
+    _videoPlayerController.initialize();
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController.dispose();
+    _chewieController.dispose();
+    super.dispose();
+  }
+
+  void _toggleLike() {
+    setState(() {
+      isLiked = !isLiked;
+      likeCount += isLiked ? 1 : -1;
+    });
+  }
+
+  Future<void> _showReportDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Report Video'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Are you sure you want to report this video?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                // TODO: Implement the action to report the video
+                Navigator.of(context).pop();
+              },
+              child: Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // Navigate to the grade section page
+            Navigator.pushReplacementNamed(context, '/videoSearch');
+          },
+        ),
+        title: Text('Video Watch', style: TextStyle(
+            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 26)),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          _buildVideoWatchPage(
+            videoUrl: 'assets/Eduitive.mp4',
+            title: 'Sample Video Title',
+            uploaderName: 'Uploader Name',
+            views: '100 views',
+            uploadTime: '2 days ago',
+          ),
+
+          Text(
+            'Other Recommended Videos',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+
+            ),
+          ),
+
+          Expanded(
+            child: ListView.builder(
+              itemCount: 10, // Replace with the actual number of videos
+              itemBuilder: (context, index) {
+                return _buildVideoItem(
+                  thumbnailUrl: 'assets/banner_image_3.jpg',
+                  // Replace with the actual thumbnail URL
+                  caption: 'Video Caption $index',
+                  // Replace with the actual video caption
+                  uploaderName: 'Uploader Name',
+                  // Replace with the actual uploader name
+                  views: '100 views',
+                  // Replace with the actual number of views
+                  uploadTime: '2 days ago', // Replace with the actual upload time
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoWatchPage({
+    required String videoUrl,
+    required String title,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(top: 10, bottom: 10, left: 20, right: 20),
+      padding: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0),
+        border: Border.all(color: Color(0xFF808191), width: 1.3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 180, child: Chewie(controller: _chewieController)),
+          SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundImage: AssetImage('assets/Photo.PNG'),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'By $uploaderName',
+                  style: TextStyle(fontSize: 16, color: Color(0xFF808191)),
+                ),
+              ),
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _showReportDialog,
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.white,
+                  onPrimary: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0)),
+                ),
+                child: Text('Report'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.favorite),
+                color: isLiked ? Colors.red : Colors.grey,
+                onPressed: _toggleLike,
+              ),
+              Text('$likeCount likes'),
+              SizedBox(width: 15),
+              Icon(
+                  Icons.fiber_manual_record, size: 7, color: Color(0xFF808191)),
+              SizedBox(width: 15),
+              Text(
+                views,
+                style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+              ),
+              SizedBox(width: 15),
+              Icon(
+                  Icons.fiber_manual_record, size: 7, color: Color(0xFF808191)),
+              SizedBox(width: 15),
+              Text(
+                uploadTime,
+                style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoListItem({
+    required String videoUrl,
+    required String title,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(top: 10, bottom: 10, left: 20, right: 20),
+      padding: EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0),
+        border: Border.all(color: Color(0xFF808191), width: 1.3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 180, child: Chewie(controller: _chewieController)),
+          SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundImage: AssetImage('assets/Photo.PNG'),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'By $uploaderName',
+                  style: TextStyle(fontSize: 16, color: Color(0xFF808191)),
+                ),
+              ),
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _showReportDialog,
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.white,
+                  onPrimary: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0)),
+                ),
+                child: Text('Report'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.favorite),
+                color: isLiked ? Colors.red : Colors.grey,
+                onPressed: _toggleLike,
+              ),
+              Text('$likeCount likes'),
+              SizedBox(width: 15),
+              Icon(
+                  Icons.fiber_manual_record, size: 7, color: Color(0xFF808191)),
+              SizedBox(width: 15),
+              Text(
+                views,
+                style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+              ),
+              SizedBox(width: 15),
+              Icon(
+                  Icons.fiber_manual_record, size: 7, color: Color(0xFF808191)),
+              SizedBox(width: 15),
+              Text(
+                uploadTime,
+                style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoItem({
+    required String thumbnailUrl,
+    required String caption,
+    required String uploaderName,
+    required String views,
+    required String uploadTime,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+      padding: EdgeInsets.all(16.0), // Added padding
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0),
+        // Increased the border radius
+        border: Border.all(color: Color(0xFF808191), width: 1.3,),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(
+              thumbnailUrl,
+              width: 120,
+              height: 90,
+              fit: BoxFit.cover,
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  caption,
+                  style: TextStyle(fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'By $uploaderName',
+                  style: TextStyle(fontSize: 16, color: Color(0xFF808191)),
+                ),
+                SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(Icons.remove_red_eye, size: 16,
+                        color: Color(0xFF808191)),
+                    SizedBox(width: 4),
+                    Text(
+                      views,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.fiber_manual_record, size: 6,
+                        color: Color(0xFF808191)),
+                    SizedBox(width: 8),
+                    Text(
+                      uploadTime,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF808191)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
